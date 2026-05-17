@@ -10,6 +10,7 @@ const menu = [
     { label: 'Estoque', path: '/estoque', icon: '📦' },
     { label: 'Fornecedores', path: '/fornecedores', icon: '🚚' },
     { label: 'Relatórios', path: '/relatorios', icon: '📈' },
+    { label: 'Pendentes', path: '/pendentes', icon: '⚠️' },
 ]
 
 function Sidebar() {

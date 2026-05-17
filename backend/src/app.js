@@ -44,6 +44,9 @@ app.use('/relatorios', relatorioRoutes)
 const adicionalRoutes = require('./routes/adicionalRoutes')
 app.use('/adicionais', adicionalRoutes)
 
+const pendenteRoutes = require('./routes/pendenteRoutes')
+app.use('/pendentes', pendenteRoutes)
+
 // teste de conexão
 app.get('/', (req, res) => {
     res.json({ mensagem: 'Servidor rodando!' });

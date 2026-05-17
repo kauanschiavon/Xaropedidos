@@ -10,12 +10,12 @@ const PedidoModel = {
     return rows;
   },
 
-  buscarPorId: async (id) => {
+buscarPorId: async (id) => {
     const [rows] = await db.query(
       `
         SELECT 
             p.*,
-            ip.id as item_id, ip.quantidade, ip.valor_unitario, ip.observacao,
+            ip.id as item_id, ip.id_produto, ip.quantidade, ip.valor_unitario, ip.observacao,
             pr.nome as nome_produto,
             GROUP_CONCAT(
                 a.nome ORDER BY a.nome SEPARATOR ', '
@@ -27,12 +27,12 @@ const PedidoModel = {
         LEFT JOIN item_adicional ia ON ia.id_item_pedido = ip.id
         LEFT JOIN adicional a ON ia.id_adicional = a.id
         WHERE p.id = ?
-        GROUP BY p.id, ip.id, ip.quantidade, ip.valor_unitario, ip.observacao, pr.nome
+        GROUP BY p.id, ip.id, ip.id_produto, ip.quantidade, ip.valor_unitario, ip.observacao, pr.nome
     `,
       [id],
     );
     return rows;
-  },
+},
 
 buscarPorNome: async (nomeDoCliente) => {
     const [rows] = await db.query(`
@@ -44,11 +44,11 @@ buscarPorNome: async (nomeDoCliente) => {
 },
 
 criar: async (pedido) => {
-    const { id_caixa, nome_do_cliente } = pedido;
+    const { id_caixa, nome_do_cliente, forma_pagamento } = pedido;
     const [result] = await db.query(
-        `INSERT INTO pedido (id_caixa, horario, status, valor_total, nome_do_cliente) 
-         VALUES (?, NOW(), 'em_preparo', 0, ?)`,
-        [id_caixa, nome_do_cliente]
+        `INSERT INTO pedido (id_caixa, horario, status, valor_total, nome_do_cliente, forma_pagamento) 
+         VALUES (?, NOW(), 'em_preparo', 0, ?, ?)`,
+        [id_caixa, nome_do_cliente, forma_pagamento || null]
     );
     return result.insertId;
 },

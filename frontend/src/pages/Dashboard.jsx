@@ -25,20 +25,21 @@ function Dashboard() {
   const [pedidos, setPedidos] = useState([]);
   const [insumosCriticos, setInsumosCriticos] = useState([]);
   const [contagemInsumos, setContagemInsumos] = useState([]);
-  const [estimativa, setEstimativa] = useState(null)
+  const [estimativa, setEstimativa] = useState(null);
 
-const carregarDados = async () => {
-    const [pedidosRes, criticosRes, contagemRes, estimativaRes] = await Promise.all([
-        api.get('/pedidos/ativos-com-itens'),
-        api.get('/insumos/criticos'),
-        api.get('/relatorios/contagem-insumos'),
-        api.get('/relatorios/estimativa-tempo')
-    ])
-    setPedidos(pedidosRes.data)
-    setInsumosCriticos(criticosRes.data)
-    setContagemInsumos(contagemRes.data)
-    setEstimativa(estimativaRes.data)
-};
+  const carregarDados = async () => {
+    const [pedidosRes, criticosRes, contagemRes, estimativaRes] =
+      await Promise.all([
+        api.get("/pedidos/dashboard-com-itens"),
+        api.get("/insumos/criticos"),
+        api.get("/relatorios/contagem-insumos"),
+        api.get("/relatorios/estimativa-tempo"),
+      ]);
+    setPedidos(pedidosRes.data);
+    setInsumosCriticos(criticosRes.data);
+    setContagemInsumos(contagemRes.data);
+    setEstimativa(estimativaRes.data);
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -47,7 +48,7 @@ const carregarDados = async () => {
     init();
 
     // atualiza a cada 30 segundos automaticamente
-const intervalo = setInterval(carregarDados, 60000);
+    const intervalo = setInterval(carregarDados, 60000);
     return () => clearInterval(intervalo);
   }, []);
 
@@ -70,14 +71,14 @@ const intervalo = setInterval(carregarDados, 60000);
     await carregarDados();
   };
 
-const corTempo = (horario) => {
-    const agora = new Date()
-    const hora = new Date(horario)
-    const diff = Math.floor((agora - hora) / 1000 / 60)
-    if (diff < 40) return '#16a34a'
-    if (diff < 60) return '#e7901e'
-    return '#dc2b1c'
-};
+  const corTempo = (horario) => {
+    const agora = new Date();
+    const hora = new Date(horario);
+    const diff = Math.floor((agora - hora) / 1000 / 60);
+    if (diff < 40) return "#16a34a";
+    if (diff < 60) return "#e7901e";
+    return "#dc2b1c";
+  };
 
   return (
     <div>
@@ -108,45 +109,68 @@ const corTempo = (horario) => {
       <p style={{ color: "#888", marginBottom: "30px" }}>
         Visão geral da operação
       </p>
-      {estimativa && (estimativa.total_lanches > 0 || estimativa.total_porcoes > 0) && (
-    <div style={{
-        background: 'linear-gradient(135deg, #e7901e, #dc2b1c)',
-        borderRadius: '12px',
-        padding: '20px 24px',
-        marginBottom: '24px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 4px 12px rgba(231, 144, 30, 0.3)'
-    }}>
-        <div>
-            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', marginBottom: '4px' }}>
+      {estimativa &&
+        (estimativa.total_lanches > 0 || estimativa.total_porcoes > 0) && (
+          <div
+            style={{
+              background: "linear-gradient(135deg, #e7901e, #dc2b1c)",
+              borderRadius: "12px",
+              padding: "20px 24px",
+              marginBottom: "24px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              boxShadow: "0 4px 12px rgba(231, 144, 30, 0.3)",
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  color: "rgba(255,255,255,0.8)",
+                  fontSize: "13px",
+                  marginBottom: "4px",
+                }}
+              >
                 ⏱ Estimativa de tempo para finalizar todos os pedidos
-            </p>
-            <h2 style={{ color: 'white', fontSize: '32px', margin: 0 }}>
+              </p>
+              <h2 style={{ color: "white", fontSize: "32px", margin: 0 }}>
                 {estimativa.estimativa_minutos} minutos
-            </h2>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '4px' }}>
-                {estimativa.total_lanches > 0 && `${estimativa.total_lanches} ${estimativa.total_lanches === 1 ? 'lanche' : 'lanches'} × 3min`}
-                {estimativa.total_lanches > 0 && estimativa.total_porcoes > 0 && ' + '}
-                {estimativa.total_porcoes > 0 && `${estimativa.total_porcoes} ${estimativa.total_porcoes === 1 ? 'porção' : 'porções'} × 5min`}
-                {estimativa.total_lanches <= 2 && estimativa.total_porcoes === 0 && ' — tempo mínimo fixo'}
-            </p>
-        </div>
-        <div style={{
-            background: 'rgba(255,255,255,0.2)',
-            borderRadius: '50%',
-            width: '64px',
-            height: '64px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '28px'
-        }}>
-            🍔
-        </div>
-    </div>
-)}
+              </h2>
+              <p
+                style={{
+                  color: "rgba(255,255,255,0.7)",
+                  fontSize: "12px",
+                  marginTop: "4px",
+                }}
+              >
+                {estimativa.total_lanches > 0 &&
+                  `${estimativa.total_lanches} ${estimativa.total_lanches === 1 ? "lanche" : "lanches"} × 3min`}
+                {estimativa.total_lanches > 0 &&
+                  estimativa.total_porcoes > 0 &&
+                  " + "}
+                {estimativa.total_porcoes > 0 &&
+                  `${estimativa.total_porcoes} ${estimativa.total_porcoes === 1 ? "porção" : "porções"} × 5min`}
+                {estimativa.total_lanches <= 2 &&
+                  estimativa.total_porcoes === 0 &&
+                  " — tempo mínimo fixo"}
+              </p>
+            </div>
+            <div
+              style={{
+                background: "rgba(255,255,255,0.2)",
+                borderRadius: "50%",
+                width: "64px",
+                height: "64px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "28px",
+              }}
+            >
+              🍔
+            </div>
+          </div>
+        )}
 
       {/* Cards de resumo */}
       <div style={{ display: "flex", gap: "20px", marginBottom: "30px" }}>
@@ -204,141 +228,244 @@ const corTempo = (horario) => {
           Fila de Pedidos — mais antigos no topo
         </h3>
 
-{pedidos.length === 0 ? (
-    <div style={{
-        background: 'white',
-        borderRadius: '12px',
-        padding: '40px',
-        textAlign: 'center',
-        color: '#aaa',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-    }}>
-        Nenhum pedido ativo no momento
-    </div>
-) : (
-    <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '12px'
-    }}>
-        {pedidos.map((pedido, index) => (
-            <div key={pedido.id} style={{
-                background: 'white',
-                borderRadius: '12px',
-                padding: '20px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                borderLeft: `4px solid ${pedido.status === 'pronto' ? '#16a34a' : corTempo(pedido.horario)}`
-            }}>
+        {pedidos.length === 0 ? (
+          <div
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "40px",
+              textAlign: "center",
+              color: "#aaa",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            }}
+          >
+            Nenhum pedido ativo no momento
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px",
+            }}
+          >
+            {pedidos.map((pedido, index) => (
+              <div
+                key={pedido.id}
+                style={{
+                  background:
+                    pedido.status === "pronto" ? "#f0fdf4" : "#fff5f5",
+                  borderRadius: "12px",
+                  padding: "20px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  borderLeft: `4px solid ${pedido.status === "pronto" ? "#16a34a" : corTempo(pedido.horario)}`,
+                }}
+              >
                 {/* Cabeçalho do pedido */}
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '12px'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{
-                            background: '#1a1a1a',
-                            color: 'white',
-                            borderRadius: '50%',
-                            width: '28px',
-                            height: '28px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '13px',
-                            fontWeight: 'bold',
-                            flexShrink: 0
-                        }}>
-                            {index + 1}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        background: "#1a1a1a",
+                        color: "white",
+                        borderRadius: "50%",
+                        width: "28px",
+                        height: "28px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "13px",
+                        fontWeight: "bold",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {index + 1}
+                    </span>
+<div>
+    <strong style={{ fontSize: '15px', color: '#e7901e' }}>
+        {pedido.nome_do_cliente}
+    </strong>
+</div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >{pedido.status === 'pago' && (
+    <span style={{
+        background: '#eff6ff', color: '#2563eb',
+        padding: '4px 10px', borderRadius: '20px',
+        fontSize: '11px', fontWeight: 'bold'
+    }}>
+        💳 Pago
+    </span>
+)}
+                    {pedido.status === "pronto" ? (
+                      <>
+                        <span
+                          style={{
+                            background: "#f0fdf4",
+                            color: "#16a34a",
+                            padding: "4px 10px",
+                            borderRadius: "20px",
+                            fontSize: "11px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          ✓ Pronto
                         </span>
-                        <div>
-                            <strong style={{ fontSize: '15px' }}>Mesa {pedido.numero_mesa}</strong>
-                            {pedido.nome_do_cliente && (
-                                <span style={{ color: '#888', fontSize: '12px', marginLeft: '6px' }}>
-                                    {pedido.nome_do_cliente}
-                                </span>
-                            )}
-                        </div>
-                    </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {pedido.status === 'pronto' ? (
-                            <>
-                                <span style={{
-                                    background: '#f0fdf4', color: '#16a34a',
-                                    padding: '4px 10px', borderRadius: '20px',
-                                    fontSize: '11px', fontWeight: 'bold'
-                                }}>
-                                    ✓ Pronto
-                                </span>
-                                <button onClick={() => marcarEmPreparo(pedido.id)} style={{
-                                    background: '#fff3e0', color: '#e7901e',
-                                    border: 'none', borderRadius: '8px',
-                                    padding: '4px 10px', cursor: 'pointer', fontSize: '11px'
-                                }}>
-                                    Voltar
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <span style={{
-                                    color: corTempo(pedido.horario),
-                                    fontSize: '12px', fontWeight: 'bold'
-                                }}>
-                                    ⏱ {tempoDecorrido(pedido.horario)}
-                                </span>
-                                <span style={{ color: '#888', fontSize: '11px' }}>
-                                    {new Date(pedido.horario).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                                <button onClick={() => marcarPronto(pedido.id)} style={{
-                                    background: 'linear-gradient(135deg, #e7901e, #dc2b1c)',
-                                    color: 'white', border: 'none', borderRadius: '8px',
-                                    padding: '4px 10px', cursor: 'pointer',
-                                    fontSize: '11px', fontWeight: 'bold'
-                                }}>
-                                    ✓ Pronto
-                                </button>
-                            </>
-                        )}
-                    </div>
+                        <button
+                          onClick={() => marcarEmPreparo(pedido.id)}
+                          style={{
+                            background: "#fff3e0",
+                            color: "#e7901e",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "4px 10px",
+                            cursor: "pointer",
+                            fontSize: "11px",
+                          }}
+                        >
+                          Voltar
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span
+                          style={{
+                            color: corTempo(pedido.horario),
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          ⏱ {tempoDecorrido(pedido.horario)}
+                        </span>
+
+                        <span style={{ color: "#888", fontSize: "11px" }}>
+                          {new Date(pedido.horario).toLocaleTimeString(
+                            "pt-BR",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
+                        </span>
+
+                        <button
+                          onClick={() => marcarPronto(pedido.id)}
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #e7901e, #dc2b1c)",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "4px 10px",
+                            cursor: "pointer",
+                            fontSize: "11px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          ✓ Pronto
+                        </button>
+                      </>
+                    )}
+
+                    <span
+                      style={{
+                        fontWeight: "bold",
+                        fontSize: "14px",
+                        color: "#1a1a1a",
+                        marginLeft: "4px",
+                      }}
+                    >
+                      R$ {Number(pedido.valor_total || 0).toFixed(2)}
+                    </span>
+                  </div>{" "}
+                  {/* FECHAR O CABEÇALHO AQUI */}
                 </div>
 
                 {/* Itens */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    {pedido.itens.map((item, i) => (
-                        <div key={i} style={{
-                            display: 'flex', alignItems: 'center', gap: '8px',
-                            padding: '6px 10px', background: '#f9f9f9', borderRadius: '8px'
-                        }}>
-                            <span style={{
-                                background: '#e7901e', color: 'white',
-                                borderRadius: '6px', padding: '2px 7px',
-                                fontSize: '12px', fontWeight: 'bold',
-                                minWidth: '26px', textAlign: 'center', flexShrink: 0
-                            }}>
-                                {item.quantidade}x
-                            </span>
-                            <span style={{ fontWeight: 'bold', fontSize: '13px' }}>
-                                {item.nome_produto}
-                            </span>
-                            {item.adicionais && (
-                                <span style={{ color: '#e7901e', fontSize: '11px', fontStyle: 'italic' }}>
-                                    + {item.adicionais}
-                                </span>
-                            )}
-                            {item.observacao && (
-                                <span style={{ color: '#dc2b1c', fontSize: '11px', fontStyle: 'italic' }}>
-                                    ⚠ {item.observacao}
-                                </span>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        ))}
-    </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "5px",
+                  }}
+                >
+                  {pedido.itens.map((item, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "6px 10px",
+                        background: "#f9f9f9",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          background: "#e7901e",
+                          color: "white",
+                          borderRadius: "6px",
+                          padding: "2px 7px",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          minWidth: "26px",
+                          textAlign: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {item.quantidade}x
+                      </span>
+                      <span style={{ fontWeight: "bold", fontSize: "13px" }}>
+                        {item.nome_produto}
+                      </span>
+                      {item.adicionais && (
+                        <span
+                          style={{
+                            color: "#e7901e",
+                            fontSize: "11px",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          + {item.adicionais}
+                        </span>
+                      )}
+{item.observacao && (
+    <span style={{
+        color: '#dc2b1c',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase'
+    }}>
+        ⚠ {item.observacao}
+    </span>
 )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Estoque crítico */}

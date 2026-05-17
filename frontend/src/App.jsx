@@ -9,12 +9,14 @@ import Produtos from './pages/Produtos'
 import Fornecedores from './pages/Fornecedores'
 import Funcionarios from './pages/Funcionarios'
 import Relatorios from './pages/Relatorios'
+import Pendentes from './pages/Pendentes'
 
 function App() {
   return (
     <BrowserRouter>
       <Layout>
         <Routes>
+          <Route path="/pendentes" element={<Pendentes />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/pedidos" element={<Pedidos />} />
           <Route path="/caixa" element={<Caixa />} />

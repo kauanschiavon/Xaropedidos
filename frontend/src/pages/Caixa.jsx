@@ -107,12 +107,13 @@ function Caixa() {
     },
   };
 
-  const formaLabel = {
-    pix: "PIX",
-    dinheiro: "Dinheiro",
-    cartao_credito: "Cartão de Crédito",
-    cartao_debito: "Cartão de Débito",
-  };
+const formaLabel = {
+    pix: 'PIX',
+    dinheiro: 'Dinheiro',
+    cartao: 'Cartão',
+    cartao_credito: 'Cartão de Crédito',
+    cartao_debito: 'Cartão de Débito'
+};
 
   return (
     <div>

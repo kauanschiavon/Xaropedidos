@@ -42,9 +42,12 @@ buscarPorId: async (id) => {
         );
     },
 
-    deletar: async (id) => {
-        await db.query('DELETE FROM produto WHERE id = ?', [id]);
-    }
+deletar: async (id) => {
+    await db.query('DELETE FROM item_adicional WHERE id_item_pedido IN (SELECT id FROM item_do_pedido WHERE id_produto = ?)', [id]);
+    await db.query('DELETE FROM item_do_pedido WHERE id_produto = ?', [id]);
+    await db.query('DELETE FROM receita WHERE id_produto = ?', [id]);
+    await db.query('DELETE FROM produto WHERE id = ?', [id]);
+},
 };
 
 module.exports = ProdutoModel;

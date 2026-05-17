@@ -19,12 +19,21 @@ function Pedidos() {
   const [nomePersonalizado, setNomePersonalizado] = useState("");
   const [precoPersonalizado, setPrecoPersonalizado] = useState("");
   const [insumos, setInsumos] = useState([]);
+  const [categoriasAbertas, setCategoriasAbertas] = useState({})
+
+const toggleCategoria = (categoria) => {
+    setCategoriasAbertas(prev => ({
+        ...prev,
+        [categoria]: !prev[categoria]
+    }))
+}
 
   // Estados para Novo Pedido
-  const [novoPedido, setNovoPedido] = useState({
-    nome_do_cliente: "",
-    itens: [],
-  });
+const [novoPedido, setNovoPedido] = useState({
+    nome_do_cliente: '',
+    forma_pagamento: '',
+    itens: []
+})
 
   const [novoItem, setNovoItem] = useState({
     id_produto: "",
@@ -41,19 +50,21 @@ function Pedidos() {
     observacao: "",
     adicionais: [],
   });
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
 
-  const carregarPedidos = () => {
-    api.get("/pedidos/ativos-com-itens").then((res) => {
-      const ordenados = res.data.sort((a, b) => {
-        if (a.status === "pronto" && b.status !== "pronto") return 1;
-        if (a.status !== "pronto" && b.status === "pronto") return -1;
-        return new Date(b.horario) - new Date(a.horario);
-      });
-      setPedidos(ordenados);
-    });
-  };
+const carregarPedidos = () => {
+    api.get('/pedidos/ativos-com-itens').then(res => {
+        const ordenados = res.data.sort((a, b) => {
+            if (a.status === 'pronto' && b.status !== 'pronto') return 1
+            if (a.status !== 'pronto' && b.status === 'pronto') return -1
+            return new Date(b.horario) - new Date(a.horario)
+        })
+        setPedidos(ordenados)
+    })
+};
 
   useEffect(() => {
+    
     const init = async () => {
       await carregarPedidos();
       const [produtosRes, adicionaisRes, insumosRes] = await Promise.all([
@@ -75,6 +86,12 @@ function Pedidos() {
     return () => clearInterval(intervalo);
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+}, [])
+
   // --- FUNÇÃO PARA VERIFICAR CAIXA ANTES DE ABRIR O FORMULÁRIO ---
   const abrirFormPedido = async () => {
     if (mostrarForm) {
@@ -95,6 +112,30 @@ function Pedidos() {
       setTimeout(() => setMensagem(null), 3000);
     }
   };
+const alterarQuantidadeItem = async (item, delta) => {
+    try {
+        const novaQuantidade = item.quantidade + delta
+
+        if (novaQuantidade <= 0) {
+            await api.delete(`/pedidos/${pedidoEditando.id}/itens/${item.item_id}`)
+        } else {
+            await api.delete(`/pedidos/${pedidoEditando.id}/itens/${item.item_id}`)
+            await api.post(`/pedidos/${pedidoEditando.id}/itens`, {
+                id_produto: item.id_produto,
+                quantidade: novaQuantidade,
+                observacao: item.observacao
+            })
+        }
+
+        const res = await api.get(`/pedidos/${pedidoEditando.id}`)
+        setItensPedidoEditando(Array.isArray(res.data) ? res.data : [])
+        carregarPedidos()
+    } catch (error) {
+        console.error('Erro:', error.response?.data)
+        setMensagem({ tipo: 'erro', texto: error.response?.data?.erro || 'Erro ao alterar quantidade' })
+        setTimeout(() => setMensagem(null), 3000)
+    }
+};
 
   // --- FUNÇÕES DE EDIÇÃO ---
   const abrirEdicao = async (pedido) => {
@@ -191,11 +232,11 @@ function Pedidos() {
       const itensPersonalizados = novoPedido.itens.filter(
         (i) => i.id_produto === "personalizado",
       );
-
-      const res = await api.post("/pedidos", {
-        nome_do_cliente: novoPedido.nome_do_cliente,
-        itens: itensPadrao,
-      });
+const res = await api.post('/pedidos', {
+    nome_do_cliente: novoPedido.nome_do_cliente,
+    forma_pagamento: novoPedido.forma_pagamento || null,
+    itens: itensPadrao
+})
 
       const idPedido = res.data.id;
       const pedidoRes = await api.get(`/pedidos/${idPedido}`);
@@ -367,14 +408,6 @@ function Pedidos() {
     },
   };
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   const tempoDecorrido = (horario) => {
     const agora = new Date();
     const hora = new Date(horario);
@@ -449,6 +482,19 @@ function Pedidos() {
               placeholder="Nome do cliente (obrigatório)"
             />
           </div>
+          <div style={{ marginBottom: '16px' }}>
+    <label style={{ fontSize: '13px', color: '#555' }}>
+        Forma de Pagamento <span style={{ color: '#aaa', fontSize: '11px' }}>(opcional — para delivery)</span>
+    </label>
+    <select style={estilo.select}
+        value={novoPedido.forma_pagamento}
+        onChange={e => setNovoPedido({ ...novoPedido, forma_pagamento: e.target.value })}>
+        <option value="">Não informado</option>
+        <option value="pix">PIX</option>
+        <option value="dinheiro">Dinheiro</option>
+        <option value="cartao">Cartão</option>
+    </select>
+</div>
 
           {/* Botão lanche personalizado */}
           <div style={{ marginBottom: "16px" }}>
@@ -478,128 +524,105 @@ function Pedidos() {
           </div>
 
           {/* Catálogo de produtos por categoria */}
-          <h4 style={{ marginBottom: "12px", color: "#555" }}>
-            Escolha os itens
-          </h4>
-          {Object.entries(
-            produtos.reduce((acc, p) => {
-              if (!acc[p.categoria]) acc[p.categoria] = [];
-              acc[p.categoria].push(p);
-              return acc;
-            }, {}),
-          ).map(([categoria, itens]) => (
-            <div key={categoria} style={{ marginBottom: "16px" }}>
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: "#888",
-                  marginBottom: "8px",
-                  textTransform: "uppercase",
-                  letterSpacing: "1px",
-                }}
-              >
-                {categoria}
-              </p>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
-              >
-                {itens.map((produto) => {
-                  const itemNoCarrinho = novoPedido.itens.filter(
-                    (i) => i.id_produto === String(produto.id),
-                  );
-                  const quantidadeTotal = itemNoCarrinho.reduce(
-                    (acc, i) => acc + i.quantidade,
-                    0,
-                  );
-                  return (
-                    <button
-                      key={produto.id}
-                      type="button"
-                      onClick={() => {
-                        if (!produto.disponivel) {
-                          setMensagem({
-                            tipo: "erro",
-                            texto: `"${produto.nome}" está indisponível no momento`,
-                          });
-                          setTimeout(() => setMensagem(null), 3000);
-                          return;
-                        }
-                        setProdutoRapido(produto);
-                        setMostrarPersonalizado(false); // Fecha a gaveta do lanche personalizado
-                        setNovoItem({
-                          id_produto: String(produto.id),
-                          quantidade: 1,
-                          observacao: "",
-                        });
-                        setAdicionaisSelecionados({ 0: {} });
-                      }}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "12px 16px",
-                        borderRadius: "10px",
-                        border:
-                          produtoRapido?.id === produto.id
-                            ? "2px solid #e7901e"
-                            : "2px solid #f0f0f0",
-                        background: !produto.disponivel
-                          ? "#f9f9f9"
-                          : produtoRapido?.id === produto.id
-                            ? "#fff8f0"
-                            : "white",
-                        cursor: produto.disponivel ? "pointer" : "not-allowed",
-                        textAlign: "left",
-                        opacity: produto.disponivel ? 1 : 0.5,
-                      }}
-                    >
-                      <div>
-                        <strong style={{ fontSize: "14px" }}>
-                          {produto.nome}
-                        </strong>
-                        {!produto.disponivel && (
-                          <p
-                            style={{
-                              color: "#dc2b1c",
-                              fontSize: "11px",
-                              margin: 0,
-                            }}
-                          >
-                            Indisponível
-                          </p>
-                        )}
-                        {produto.disponivel && (
-                          <p
-                            style={{
-                              color: "#888",
-                              fontSize: "12px",
-                              margin: 0,
-                            }}
-                          >
-                            R$ {Number(produto.valor_unitario).toFixed(2)}
-                          </p>
-                        )}
-                      </div>
-                      {quantidadeTotal > 0 && (
-                        <span
-                          style={{
-                            background: "#e7901e",
-                            color: "white",
-                            borderRadius: "20px",
-                            padding: "2px 10px",
-                            fontSize: "13px",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {quantidadeTotal}x
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+<h4 style={{ marginBottom: '12px', color: '#555' }}>Escolha os itens</h4>
+
+{Object.entries(
+    produtos.reduce((acc, p) => {
+        if (!acc[p.categoria]) acc[p.categoria] = []
+        acc[p.categoria].push(p)
+        return acc
+    }, {})
+).map(([categoria, itens]) => (
+    <div key={categoria} style={{ marginBottom: '8px' }}>
+        {/* Barra da categoria */}
+        <button
+            type="button"
+            onClick={() => toggleCategoria(categoria)}
+            style={{
+                width: '100%',
+                padding: '12px 16px',
+                borderRadius: '10px',
+                border: 'none',
+                background: categoriasAbertas[categoria] ? '#1a1a1a' : '#f0f0f0',
+                color: categoriasAbertas[categoria] ? 'white' : '#333',
+                cursor: 'pointer',
+                textAlign: 'left',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: categoriasAbertas[categoria] ? '8px' : '0'
+            }}>
+            <span>{categoria}</span>
+            <span>{categoriasAbertas[categoria] ? '▲' : '▼'}</span>
+        </button>
+
+        {/* Itens da categoria — só mostra se aberta */}
+        {categoriasAbertas[categoria] && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {itens
+                    .sort((a, b) => a.valor_unitario - b.valor_unitario)
+                    .map(produto => {
+                        const itemNoCarrinho = novoPedido.itens.filter(
+                            i => i.id_produto === String(produto.id)
+                        )
+                        const quantidadeTotal = itemNoCarrinho.reduce(
+                            (acc, i) => acc + i.quantidade, 0
+                        )
+                        return (
+                            <button
+                                key={produto.id}
+                                type="button"
+                                onClick={() => {
+                                    if (!produto.disponivel) {
+                                        setMensagem({ tipo: 'erro', texto: `"${produto.nome}" está indisponível no momento` })
+                                        setTimeout(() => setMensagem(null), 3000)
+                                        return
+                                    }
+                                    setProdutoRapido(produto)
+                                    setNovoItem({ id_produto: String(produto.id), quantidade: 1, observacao: '' })
+                                    setAdicionaisSelecionados({ 0: {} })
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '12px 16px',
+                                    borderRadius: '10px',
+                                    border: produtoRapido?.id === produto.id ? '2px solid #e7901e' : '2px solid #f0f0f0',
+                                    background: !produto.disponivel ? '#f9f9f9' : produtoRapido?.id === produto.id ? '#fff8f0' : 'white',
+                                    cursor: produto.disponivel ? 'pointer' : 'not-allowed',
+                                    textAlign: 'left',
+                                    opacity: produto.disponivel ? 1 : 0.5
+                                }}>
+                                <div>
+                                    <strong style={{ fontSize: '14px' }}>{produto.nome}</strong>
+                                    {!produto.disponivel && (
+                                        <p style={{ color: '#dc2b1c', fontSize: '11px', margin: 0 }}>Indisponível</p>
+                                    )}
+                                    {produto.disponivel && (
+                                        <p style={{ color: '#888', fontSize: '12px', margin: 0 }}>
+                                            R$ {Number(produto.valor_unitario).toFixed(2)}
+                                        </p>
+                                    )}
+                                </div>
+                                {quantidadeTotal > 0 && (
+                                    <span style={{
+                                        background: '#e7901e', color: 'white',
+                                        borderRadius: '20px', padding: '2px 10px',
+                                        fontSize: '13px', fontWeight: 'bold'
+                                    }}>
+                                        {quantidadeTotal}x
+                                    </span>
+                                )}
+                            </button>
+                        )
+                    })}
             </div>
-          ))}
+        )}
+    </div>
+))}
 
           {/* Carrinho Resumo */}
           {novoPedido.itens.length > 0 && (
@@ -657,17 +680,16 @@ function Pedidos() {
                             .join(", ")}
                         </span>
                       )}
-                    {item.observacao && (
-                      <p
-                        style={{
-                          color: "#dc2b1c",
-                          fontSize: "12px",
-                          margin: 0,
-                        }}
-                      >
-                        ⚠ {item.observacao}
-                      </p>
-                    )}
+{item.observacao && (
+    <span style={{
+        color: '#dc2b1c',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase'
+    }}>
+        ⚠ {item.observacao}
+    </span>
+)}
                   </div>
                   <button
                     style={estilo.botaoCancelar}
@@ -803,14 +825,19 @@ function Pedidos() {
             {!["Refri", "Sucos", "Cerveja", "Água"].includes(
               produtoRapido?.categoria,
             ) && (
-              <input
-                style={{ ...estilo.input, margin: 0, flex: 1 }}
-                placeholder="Observação (opcional)"
-                value={novoItem.observacao}
-                onChange={(e) =>
-                  setNovoItem({ ...novoItem, observacao: e.target.value })
-                }
-              />
+<textarea
+    style={{
+        ...estilo.input,
+        margin: 0,
+        flex: 1,
+        minHeight: '60px',
+        resize: 'vertical',
+        textTransform: 'uppercase'
+    }}
+    placeholder="OBSERVAÇÃO (OPCIONAL)"
+    value={novoItem.observacao}
+    onChange={e => setNovoItem({ ...novoItem, observacao: e.target.value.toUpperCase() })}
+/>
             )}
           </div>
 
@@ -1378,6 +1405,11 @@ function Pedidos() {
       )}
 
       {/* Lista de Pedidos */}
+      <div style={{
+    display: 'grid',
+    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+    gap: '12px'
+}}></div>
       {pedidos.map((pedido) => (
         <div
           key={pedido.id}
@@ -1416,17 +1448,38 @@ function Pedidos() {
               >
                 ⏱ {tempoDecorrido(pedido.horario)}
               </span>
-              <span style={{ color: "#888", fontSize: "12px" }}>
-                {new Date(pedido.horario).toLocaleTimeString("pt-BR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
+<span style={{ color: "#888", fontSize: "12px" }}>
+  {new Date(pedido.horario).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}
+
+{pedido.forma_pagamento && (
+    <span style={{
+        color: '#888',
+        fontSize: '11px',
+        background: '#f0f0f0',
+        padding: '2px 8px',
+        borderRadius: '10px'
+    }}>
+        {pedido.forma_pagamento.toUpperCase()}
+    </span>
+)}
+</span>
               <span style={{ fontWeight: "bold", fontSize: "16px" }}>
                 R$ {Number(pedido.valor_total).toFixed(2)}
               </span>
 
               {/* BLOCO DE STATUS E BOTÃO CORRIGIDO */}
+              {pedido.status === 'pago' && (
+    <span style={{
+        background: '#eff6ff', color: '#2563eb',
+        padding: '4px 12px', borderRadius: '20px',
+        fontSize: '12px', fontWeight: 'bold'
+    }}>
+        💳 Pago
+    </span>
+)}
               {pedido.status === "pronto" ? (
                 <>
                   <span
@@ -1489,259 +1542,186 @@ function Pedidos() {
             </div>
           </div>
 
-          {/* Itens */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            {pedido.itens &&
-              pedido.itens.map((item, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    padding: "8px 12px",
-                    background: "#f9f9f9",
-                    borderRadius: "8px",
-                  }}
-                >
-                  <span
-                    style={{
-                      background: "#e7901e",
-                      color: "white",
-                      borderRadius: "6px",
-                      padding: "2px 8px",
-                      fontSize: "13px",
-                      fontWeight: "bold",
-                      minWidth: "28px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {item.quantidade}x
-                  </span>
-                  <span style={{ fontWeight: "bold", fontSize: "14px" }}>
-                    {item.nome_produto}
-                  </span>
-                  {item.adicionais && (
-                    <span
-                      style={{
-                        color: "#e7901e",
-                        fontSize: "12px",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      + {item.adicionais}
-                    </span>
-                  )}
-                  {item.observacao && (
-                    <span
-                      style={{
-                        color: "#dc2b1c",
-                        fontSize: "13px",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      ⚠ {item.observacao}
-                    </span>
-                  )}
-                </div>
-              ))}
-          </div>
+{/* Itens */}
+<div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+    {pedido.itens && pedido.itens.map((item, i) => (
+        <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '8px 12px', background: '#f9f9f9', borderRadius: '8px'
+        }}>
+            <span style={{
+                background: '#e7901e', color: 'white',
+                borderRadius: '6px', padding: '2px 8px',
+                fontSize: '13px', fontWeight: 'bold',
+                minWidth: '28px', textAlign: 'center'
+            }}>
+                {item.quantidade}x
+            </span>
+            <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                {item.nome_produto}
+            </span>
+            {item.adicionais && (
+                <span style={{ color: '#e7901e', fontSize: '12px', fontStyle: 'italic' }}>
+                    + {item.adicionais}
+                </span>
+            )}
+            {item.observacao && (
+                <span style={{ color: '#dc2b1c', fontSize: '13px', fontStyle: 'italic' }}>
+                    ⚠ {item.observacao}
+                </span>
+            )}
+        </div>
+    ))}
+</div>
         </div>
       ))}
+      
 
       {/* MODAL DE EDIÇÃO */}
-      {pedidoEditando && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            zIndex: 1000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              borderRadius: "12px",
-              padding: "24px",
-              width: "100%",
-              maxWidth: "600px",
-              maxHeight: "80vh",
-              overflowY: "auto",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "20px",
-              }}
-            >
-              <h3>Editando — {pedidoEditando.nome_do_cliente}</h3>
-              <button
-                onClick={() => setPedidoEditando(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "20px",
-                  cursor: "pointer",
-                }}
-              >
-                ✕
-              </button>
-            </div>
+{pedidoEditando && (
+    <div style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        maxWidth: '420px',
+        background: 'white',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: '-4px 0 20px rgba(0,0,0,0.15)'
+    }}>
+        {/* Header */}
+        <div style={{
+            padding: '20px 24px',
+            borderBottom: '2px solid #f0f0f0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: 'white'
+        }}>
+            <h3 style={{ margin: 0, color: '#e7901e' }}>
+                {pedidoEditando.nome_do_cliente}
+            </h3>
+            <button onClick={() => setPedidoEditando(null)} style={{
+                background: 'none', border: 'none',
+                fontSize: '20px', cursor: 'pointer', color: '#888'
+            }}>✕</button>
+        </div>
 
-            <h4 style={{ color: "#555" }}>Itens Atuais</h4>
+        {/* Conteúdo */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
+            <h4 style={{ color: '#555', marginBottom: '12px' }}>Itens do Pedido</h4>
             {itensPedidoEditando.map((item, index) => (
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "10px",
-                  background: "#f9f9f9",
-                  borderRadius: "8px",
-                  marginBottom: "8px",
-                }}
-              >
-                <span>
-                  <strong>{item.nome_produto}</strong> x{item.quantidade}{" "}
-                  {item.observacao && `(${item.observacao})`}
-                </span>
-                <button
-                  style={estilo.botaoCancelar}
-                  onClick={() => removerItemEdicao(item.item_id)}
-                >
-                  Remover
-                </button>
-              </div>
+                <div key={index} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '10px',
+                    background: '#f9f9f9',
+                    borderRadius: '8px',
+                    marginBottom: '8px'
+                }}>
+                    <div style={{ flex: 1 }}>
+                        <strong>{item.nome_produto}</strong>
+                        {item.observacao && (
+                            <p style={{ color: '#dc2b1c', fontSize: '12px', margin: 0 }}>
+                                ⚠ {item.observacao}
+                            </p>
+                        )}
+                        {item.adicionais && (
+                            <p style={{ color: '#e7901e', fontSize: '12px', margin: 0 }}>
+                                + {item.adicionais}
+                            </p>
+                        )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button onClick={() => alterarQuantidadeItem(item, -1)} style={{
+                            width: '28px', height: '28px', borderRadius: '50%',
+                            border: '2px solid #e0e0e0', background: 'white',
+                            fontSize: '16px', cursor: 'pointer', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center'
+                        }}>−</button>
+                        <strong style={{ minWidth: '20px', textAlign: 'center' }}>
+                            {item.quantidade}
+                        </strong>
+                        <button onClick={() => alterarQuantidadeItem(item, 1)} style={{
+                            width: '28px', height: '28px', borderRadius: '50%',
+                            border: '2px solid #e7901e', background: '#e7901e',
+                            color: 'white', fontSize: '16px', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>+</button>
+                        <button style={estilo.botaoCancelar}
+                            onClick={() => removerItemEdicao(item.item_id)}>
+                            ✕
+                        </button>
+                    </div>
+                </div>
             ))}
 
-            <h4 style={{ marginTop: "20px" }}>Adicionar Item</h4>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-                gap: "12px",
-              }}
-            >
-              <select
-                style={estilo.select}
+            <h4 style={{ marginTop: '20px', marginBottom: '12px', color: '#555' }}>
+                Adicionar Item
+            </h4>
+            <select style={estilo.select}
                 value={novoItemEdicao.id_produto}
-                onChange={(e) =>
-                  setNovoItemEdicao({
-                    ...novoItemEdicao,
-                    id_produto: e.target.value,
-                  })
-                }
-              >
+                onChange={e => setNovoItemEdicao({ ...novoItemEdicao, id_produto: e.target.value })}>
                 <option value="">Selecione...</option>
-                {produtos.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nome}
-                  </option>
+                {produtos.map(p => (
+                    <option key={p.id} value={p.id}>{p.nome}</option>
                 ))}
-              </select>
-              <input
-                style={estilo.input}
-                type="number"
-                min="1"
+            </select>
+            <input style={estilo.input} type="number" min="1"
                 value={novoItemEdicao.quantidade}
-                onChange={(e) =>
-                  setNovoItemEdicao({
-                    ...novoItemEdicao,
-                    quantidade: parseInt(e.target.value),
-                  })
-                }
-              />
-              <input
-                style={estilo.input}
-                type="text"
+                onChange={e => setNovoItemEdicao({ ...novoItemEdicao, quantidade: parseInt(e.target.value) })}
+                placeholder="Quantidade" />
+            <textarea style={{ ...estilo.input, minHeight: '60px', textTransform: 'uppercase' }}
                 value={novoItemEdicao.observacao}
-                onChange={(e) =>
-                  setNovoItemEdicao({
-                    ...novoItemEdicao,
-                    observacao: e.target.value,
-                  })
-                }
-                placeholder="Obs"
-              />
-              <button
-                style={{ ...estilo.botao, marginBottom: "12px" }}
-                onClick={adicionarItemEdicao}
-              >
-                +
-              </button>
+                onChange={e => setNovoItemEdicao({ ...novoItemEdicao, observacao: e.target.value.toUpperCase() })}
+                placeholder="OBSERVAÇÃO" />
 
-              {novoItemEdicao.id_produto && adicionaisEdicao.length > 0 && (
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <label
-                    style={{
-                      fontSize: "13px",
-                      color: "#555",
-                      display: "block",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    Adicionais
-                  </label>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      flexWrap: "wrap",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    {adicionaisEdicao.map((adicional) => {
-                      const selecionado = (
-                        novoItemEdicao.adicionais || []
-                      ).includes(adicional.id);
-                      return (
-                        <button
-                          key={adicional.id}
-                          type="button"
-                          onClick={() => {
-                            const atual = novoItemEdicao.adicionais || [];
-                            const jatem = atual.includes(adicional.id);
-                            setNovoItemEdicao({
-                              ...novoItemEdicao,
-                              adicionais: jatem
-                                ? atual.filter((a) => a !== adicional.id)
-                                : [...atual, adicional.id],
-                            });
-                          }}
-                          style={{
-                            padding: "6px 14px",
-                            borderRadius: "20px",
-                            border: selecionado
-                              ? "2px solid #e7901e"
-                              : "2px solid #e0e0e0",
-                            background: selecionado ? "#fff8f0" : "white",
-                            color: selecionado ? "#e7901e" : "#555",
-                            cursor: "pointer",
-                            fontSize: "13px",
-                            fontWeight: selecionado ? "bold" : "normal",
-                          }}
-                        >
-                          {adicional.nome} +R${adicional.preco.toFixed(2)}
-                        </button>
-                      );
-                    })}
-                  </div>
+            {novoItemEdicao.id_produto && adicionaisEdicao.length > 0 && (
+                <div style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '13px', color: '#555', display: 'block', marginBottom: '8px' }}>
+                        Adicionais
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {adicionaisEdicao.map(adicional => {
+                            const selecionado = (novoItemEdicao.adicionais || []).includes(adicional.id)
+                            return (
+                                <button key={adicional.id} type="button"
+                                    onClick={() => {
+                                        const atual = novoItemEdicao.adicionais || []
+                                        const jatem = atual.includes(adicional.id)
+                                        setNovoItemEdicao({
+                                            ...novoItemEdicao,
+                                            adicionais: jatem
+                                                ? atual.filter(a => a !== adicional.id)
+                                                : [...atual, adicional.id]
+                                        })
+                                    }}
+                                    style={{
+                                        padding: '6px 12px', borderRadius: '20px', fontSize: '12px',
+                                        border: selecionado ? '2px solid #e7901e' : '2px solid #e0e0e0',
+                                        background: selecionado ? '#fff8f0' : 'white',
+                                        color: selecionado ? '#e7901e' : '#555',
+                                        cursor: 'pointer'
+                                    }}>
+                                    {adicional.nome} +R${adicional.preco.toFixed(2)}
+                                </button>
+                            )
+                        })}
+                    </div>
                 </div>
-              )}
-            </div>
-          </div>
+            )}
+
+            <button style={{ ...estilo.botao, width: '100%', padding: '14px' }}
+                onClick={adicionarItemEdicao}>
+                + Adicionar ao Pedido
+            </button>
         </div>
-      )}
+    </div>
+)}
 
       {/* Botão Flutuante de Confirmar Pedido */}
       {novoPedido.itens.length > 0 &&

@@ -4,36 +4,56 @@ const db = require('../config/db')
 
 router.get('/contagem-insumos', async (req, res) => {
     try {
-        const insumosVisiveis = ['Hamburguer', 'Bacon', 'Calabresa', 'Ovo', 'Frango', 'Bacon (metade)', 'Calabresa (metade)', 'Salsicha']
-        const adicionaisVisiveis = ['Bacon (adicional)', 'Calabresa (adicional)', 'Frango (adicional)', 'Ovo', 'Salsicha']
+const insumosVisiveis = [
+    'Hambúrguer',
+    'Bacon',
+    'Calabresa',
+    'Ovo',
+    'Frango',
+    'Bacon (metade)',
+    'Calabresa (metade)',
+    'Salsicha',
+    'Frango (metade)'
+]
 
-        const [porReceita] = await db.query(`
-            SELECT 
-                i.id,
-                i.nome as nome_insumo,
-                SUM(r.quantidade * ip.quantidade) as total_necessario
-            FROM pedido p
-            JOIN item_do_pedido ip ON ip.id_pedido = p.id
-            JOIN receita r ON r.id_produto = ip.id_produto
-            JOIN insumo i ON r.id_insumo = i.id
-            WHERE p.status IN ('em_preparo', 'pronto')
-            AND i.nome IN (?)
-            GROUP BY i.id, i.nome
-        `, [insumosVisiveis])
+const adicionaisVisiveis = [
+    'Bacon (adicional)',
+    'Calabresa (adicional)',
+    'Frango (adicional)',
+    'Ovo',
+    'Salsicha'
+]
 
-        const [porAdicionais] = await db.query(`
-            SELECT 
-                a.nome as nome_insumo,
-                SUM(ia.quantidade * ip.quantidade) as total_necessario
-            FROM pedido p
-            JOIN item_do_pedido ip ON ip.id_pedido = p.id
-            JOIN item_adicional ia ON ia.id_item_pedido = ip.id
-            JOIN adicional a ON ia.id_adicional = a.id
-            WHERE p.status IN ('em_preparo', 'pronto')
-            AND a.nome IN (?)
-            GROUP BY a.id, a.nome
-        `, [adicionaisVisiveis])
+const nomesPermitidos = [
+    ...insumosVisiveis,
+    'Frango (metade)'
+]
+const [porReceita] = await db.query(`
+    SELECT 
+        i.id,
+        i.nome as nome_insumo,
+        SUM(r.quantidade * ip.quantidade) as total_necessario
+    FROM pedido p
+    JOIN item_do_pedido ip ON ip.id_pedido = p.id
+    JOIN receita r ON r.id_produto = ip.id_produto
+    JOIN insumo i ON r.id_insumo = i.id
+    WHERE p.status IN ('em_preparo', 'pronto')
+    AND i.nome IN (?)
+    GROUP BY i.id, i.nome
+`, [insumosVisiveis])
 
+const [porAdicionais] = await db.query(`
+    SELECT 
+        a.nome as nome_insumo,
+        SUM(ia.quantidade * ip.quantidade) as total_necessario
+    FROM pedido p
+    JOIN item_do_pedido ip ON ip.id_pedido = p.id
+    JOIN item_adicional ia ON ia.id_item_pedido = ip.id
+    JOIN adicional a ON ia.id_adicional = a.id
+    WHERE p.status IN ('em_preparo', 'pronto')
+    AND a.nome IN (?)
+    GROUP BY a.id, a.nome
+`, [adicionaisVisiveis])
         const mapa = {}
 
         // função para normalizar o nome — junta adicional e metade

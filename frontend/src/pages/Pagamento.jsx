@@ -11,6 +11,7 @@ function Pagamento() {
   const [forma, setForma] = useState("pix");
   const [valorPago, setValorPago] = useState("");
   const [totalPago, setTotalPago] = useState(0);
+  const [busca, setBusca] = useState('')
 
   // Estados para visualizar pedido pago
   const [pedidoVisualizando, setPedidoVisualizando] = useState(null);
@@ -70,50 +71,52 @@ function Pagamento() {
     }
   };
 
-const registrarPagamento = async () => {
+  const registrarPagamento = async () => {
     try {
-        if (!valorPago || parseFloat(valorPago) <= 0) {
-            setMensagem({ tipo: 'erro', texto: 'Informe um valor válido' });
-            setTimeout(() => setMensagem(null), 3000); // Remove o erro após 3s
-            return;
-        }
-
-        const valorPagoNum = parseFloat(valorPago);
-
-        // calcula troco antes de enviar
-        if (forma === 'dinheiro' && valorPagoNum > saldoRestante) {
-            const troco = valorPagoNum - saldoRestante;
-            setMensagem({ tipo: 'troco', texto: `Troco: R$ ${troco.toFixed(2)}` });
-        }
-
-        const res = await api.post('/pagamentos', {
-            id_pedido: pedidoSelecionado.id,
-            forma,
-            valor_pago: valorPagoNum
-        });
-
-        // Só mostra sucesso e limpa a mensagem se NÃO tiver troco
-        if (forma !== 'dinheiro' || valorPagoNum <= saldoRestante) {
-            setMensagem({ tipo: 'sucesso', texto: res.data.mensagem });
-            setTimeout(() => setMensagem(null), 3000);
-        }
-
-        await carregarDados();
-
-        if (res.data.saldo_restante === 0) {
-            setPedidoSelecionado(null);
-            setItensPedido([]);
-            setTotalPago(0);
-        } else {
-            setTotalPago(prev => prev + valorPagoNum);
-            setValorPago('');
-        }
-    } catch (error) {
-        setMensagem({ tipo: 'erro', texto: error.response?.data?.erro || 'Erro ao registrar pagamento' });
+      if (!valorPago || parseFloat(valorPago) <= 0) {
+        setMensagem({ tipo: "erro", texto: "Informe um valor válido" });
         setTimeout(() => setMensagem(null), 3000); // Remove o erro após 3s
-    }
-};
+        return;
+      }
 
+      const valorPagoNum = parseFloat(valorPago);
+
+      // calcula troco antes de enviar
+      if (forma === "dinheiro" && valorPagoNum > saldoRestante) {
+        const troco = valorPagoNum - saldoRestante;
+        setMensagem({ tipo: "troco", texto: `Troco: R$ ${troco.toFixed(2)}` });
+      }
+
+      const res = await api.post("/pagamentos", {
+        id_pedido: pedidoSelecionado.id,
+        forma,
+        valor_pago: valorPagoNum,
+      });
+
+      // Só mostra sucesso e limpa a mensagem se NÃO tiver troco
+      if (forma !== "dinheiro" || valorPagoNum <= saldoRestante) {
+        setMensagem({ tipo: "sucesso", texto: res.data.mensagem });
+        setTimeout(() => setMensagem(null), 3000);
+      }
+
+      await carregarDados();
+
+      if (res.data.saldo_restante === 0) {
+        setPedidoSelecionado(null);
+        setItensPedido([]);
+        setTotalPago(0);
+      } else {
+        setTotalPago((prev) => prev + valorPagoNum);
+        setValorPago("");
+      }
+    } catch (error) {
+      setMensagem({
+        tipo: "erro",
+        texto: error.response?.data?.erro || "Erro ao registrar pagamento",
+      });
+      setTimeout(() => setMensagem(null), 3000); // Remove o erro após 3s
+    }
+  };
 
   const estilo = {
     card: {
@@ -157,7 +160,10 @@ const registrarPagamento = async () => {
     : 0;
 
   // FILTRO ATUALIZADO AQUI
-  const pedidosPendentes = pedidos.filter(p => p.status === 'em_preparo' || p.status === 'pronto');
+const pedidosPendentes = pedidos.filter(p => 
+    p.status === 'em_preparo' || p.status === 'pronto' || p.status === 'pago'
+);
+
   const pedidosPagos = pedidos.filter((p) => p.status === "finalizado");
 
   return (
@@ -182,34 +188,53 @@ const registrarPagamento = async () => {
         </div>
       )}
 
-{mensagem && (
-    <div style={{
-        background: mensagem.tipo === 'sucesso' ? '#f0fdf4' : 
-                    mensagem.tipo === 'troco' ? '#1a1a1a' : '#fee2e2',
-        color: mensagem.tipo === 'sucesso' ? '#16a34a' : 
-               mensagem.tipo === 'troco' ? 'white' : '#dc2b1c',
-        padding: mensagem.tipo === 'troco' ? '20px 24px' : '12px 20px',
-        borderRadius: '8px',
-        marginBottom: '20px',
-        fontSize: mensagem.tipo === 'troco' ? '22px' : '14px',
-        fontWeight: mensagem.tipo === 'troco' ? 'bold' : 'normal',
-        textAlign: mensagem.tipo === 'troco' ? 'center' : 'left',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    }}>
-        <span>{mensagem.tipo === 'troco' ? `💵 ${mensagem.texto}` : mensagem.texto}</span>
-        <button onClick={() => setMensagem(null)} style={{
-            background: 'none',
-            border: 'none',
-            color: 'inherit',
-            cursor: 'pointer',
-            fontSize: '18px',
-            padding: '0 4px',
-            opacity: 0.7
-        }}>✕</button>
-    </div>
-)}
+      {mensagem && (
+        <div
+          style={{
+            background:
+              mensagem.tipo === "sucesso"
+                ? "#f0fdf4"
+                : mensagem.tipo === "troco"
+                  ? "#1a1a1a"
+                  : "#fee2e2",
+            color:
+              mensagem.tipo === "sucesso"
+                ? "#16a34a"
+                : mensagem.tipo === "troco"
+                  ? "white"
+                  : "#dc2b1c",
+            padding: mensagem.tipo === "troco" ? "20px 24px" : "12px 20px",
+            borderRadius: "8px",
+            marginBottom: "20px",
+            fontSize: mensagem.tipo === "troco" ? "22px" : "14px",
+            fontWeight: mensagem.tipo === "troco" ? "bold" : "normal",
+            textAlign: mensagem.tipo === "troco" ? "center" : "left",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span>
+            {mensagem.tipo === "troco"
+              ? `💵 ${mensagem.texto}`
+              : mensagem.texto}
+          </span>
+          <button
+            onClick={() => setMensagem(null)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "inherit",
+              cursor: "pointer",
+              fontSize: "18px",
+              padding: "0 4px",
+              opacity: 0.7,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}
@@ -221,6 +246,14 @@ const registrarPagamento = async () => {
             <h3 style={{ marginBottom: "16px", color: "#dc2b1c" }}>
               🔴 Pendentes ({pedidosPendentes.length})
             </h3>
+                {/* Campo de busca */}
+    <input
+        style={{ ...estilo.input, marginBottom: '12px' }}
+        placeholder="🔍 Buscar por nome..."
+        value={busca}
+        onChange={e => setBusca(e.target.value)}
+    />
+
             {pedidosPendentes.length === 0 ? (
               <p style={{ color: "#aaa" }}>Nenhum pedido pendente</p>
             ) : (
@@ -241,26 +274,25 @@ const registrarPagamento = async () => {
                       pedidoSelecionado?.id === pedido.id ? "#fff5f5" : "white",
                   }}
                 >
-                  <div
-                    style={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <strong>Mesa {pedido.numero_mesa}</strong>
-                    <strong style={{ color: "#dc2b1c" }}>
-                      R$ {Number(pedido.valor_total).toFixed(2)}
-                    </strong>
-                  </div>
-                  {pedido.nome_do_cliente && (
-                    <p style={{ color: "#888", fontSize: "13px" }}>
-                      {pedido.nome_do_cliente}
-                    </p>
-                  )}
-                  
+<div style={{ display: "flex", justifyContent: "space-between" }}>
+    <strong style={{ color: '#000000' }}>{pedido.nome_do_cliente}</strong>
+    <strong style={{ color: "#dc2b1c" }}>
+        R$ {Number(pedido.valor_total).toFixed(2)}
+    </strong>
+</div>
+
                   {/* TEXTO DE STATUS ATUALIZADO AQUI */}
-                  <p style={{ 
-                      color: pedido.status === 'pronto' ? '#16a34a' : '#e7901e',
-                      fontSize: '12px', marginTop: '4px', fontWeight: 'bold'
-                  }}>
-                      {pedido.status === 'pronto' ? '✓ Pronto para pagar' : '⏳ Em preparo'}
+                  <p
+                    style={{
+                      color: pedido.status === "pronto" ? "#16a34a" : "#e7901e",
+                      fontSize: "12px",
+                      marginTop: "4px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {pedido.status === "pronto"
+                      ? "✓ Pronto para pagar"
+                      : "⏳ Em preparo"}
                   </p>
 
                   <p
@@ -459,8 +491,9 @@ const registrarPagamento = async () => {
               >
                 <option value="pix">PIX</option>
                 <option value="dinheiro">Dinheiro</option>
-                <option value="cartao_credito">Cartão de Crédito</option>
-                <option value="cartao_debito">Cartão de Débito</option>
+                <option value="cartao">Cartão</option>
+                <option value="pendente">Pendente</option>
+
               </select>
 
               <label style={{ fontSize: "13px", color: "#555" }}>

@@ -19,11 +19,82 @@ const PedidoController = {
 
 listarAtivosComItens: async (req, res) => {
     try {
-      const [rows] = await db.query(`
+        const [rows] = await db.query(`
             SELECT 
+                p.forma_pagamento,
+                p.id, 
+                p.numero_mesa, 
+                p.horario, 
+                p.status, 
+                p.valor_total, 
+                p.nome_do_cliente,
+                ip.id AS item_id, 
+                ip.quantidade, 
+                ip.observacao,
+                pr.nome AS nome_produto,
+                GROUP_CONCAT(
+                    a.nome ORDER BY a.nome SEPARATOR ', '
+                ) AS adicionais
+            FROM pedido p
+            LEFT JOIN item_do_pedido ip ON ip.id_pedido = p.id
+            LEFT JOIN produto pr ON ip.id_produto = pr.id
+            LEFT JOIN item_adicional ia ON ia.id_item_pedido = ip.id
+            LEFT JOIN adicional a ON ia.id_adicional = a.id
+            WHERE p.status IN ('em_preparo', 'pronto', 'pago')
+            GROUP BY 
+                p.id, p.numero_mesa, p.horario, p.status, p.valor_total, 
+                p.nome_do_cliente, ip.id, ip.quantidade, ip.observacao, pr.nome
+        `);
+
+        const pedidosMap = {};
+
+        rows.forEach((row) => {
+            if (!pedidosMap[row.id]) {
+                pedidosMap[row.id] = {
+                    id: row.id,
+                    numero_mesa: row.numero_mesa,
+                    horario: row.horario,
+                    status: row.status,
+                    valor_total: row.valor_total,
+                    nome_do_cliente: row.nome_do_cliente,
+                            forma_pagamento: row.forma_pagamento,
+
+                    itens: [],
+                };
+            }
+
+            if (row.item_id) {
+                pedidosMap[row.id].itens.push({
+                    id: row.item_id,
+                    quantidade: row.quantidade,
+                    observacao: row.observacao,
+                    nome_produto: row.nome_produto,
+                    adicionais: row.adicionais || null,
+                });
+            }
+        });
+
+        const pedidosOrdenados = Object.values(pedidosMap).sort((a, b) => {
+            if (a.status === 'pronto' && b.status !== 'pronto') return 1;
+            if (a.status !== 'pronto' && b.status === 'pronto') return -1;
+            return new Date(b.horario) - new Date(a.horario);
+        });
+
+        res.json(pedidosOrdenados);
+    } catch (error) {
+        console.error("Erro ao listar pedidos com itens:", error.message);
+        res.status(500).json({ erro: error.message });
+    }
+},
+listarDashboardComItens: async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT 
+                p.forma_pagamento,
                 p.id, p.numero_mesa, p.horario, p.status, p.valor_total, p.nome_do_cliente,
                 ip.id as item_id, ip.quantidade, ip.observacao,
                 pr.nome as nome_produto,
+                pr.categoria as categoria_produto,
                 GROUP_CONCAT(
                     a.nome ORDER BY a.nome SEPARATOR ', '
                 ) as adicionais
@@ -32,48 +103,51 @@ listarAtivosComItens: async (req, res) => {
             LEFT JOIN produto pr ON ip.id_produto = pr.id
             LEFT JOIN item_adicional ia ON ia.id_item_pedido = ip.id
             LEFT JOIN adicional a ON ia.id_adicional = a.id
-            WHERE p.status IN ('em_preparo', 'pronto')            
+            WHERE p.status IN ('em_preparo', 'pronto', 'pago')
             GROUP BY p.id, p.numero_mesa, p.horario, p.status, p.valor_total, 
-                     p.nome_do_cliente, ip.id, ip.quantidade, ip.observacao, pr.nome
-        `);
+                     p.nome_do_cliente, ip.id, ip.quantidade, ip.observacao, pr.nome, pr.categoria
+            ORDER BY p.horario ASC
+        `)
 
-      const pedidosMap = {};
-      rows.forEach((row) => {
-        if (!pedidosMap[row.id]) {
-          pedidosMap[row.id] = {
-            id: row.id,
-            numero_mesa: row.numero_mesa,
-            horario: row.horario,
-            status: row.status,
-            valor_total: row.valor_total,
-            nome_do_cliente: row.nome_do_cliente,
-            itens: [],
-          };
-        }
-        if (row.item_id) {
-          pedidosMap[row.id].itens.push({
-            id: row.item_id,
-            quantidade: row.quantidade,
-            observacao: row.observacao,
-            nome_produto: row.nome_produto,
-            adicionais: row.adicionais || null,
-          });
-        }
-      });
+        const pedidosMap = {}
+        rows.forEach(row => {
+            if (!pedidosMap[row.id]) {
+                pedidosMap[row.id] = {
+                    id: row.id,
+                    numero_mesa: row.numero_mesa,
+                    horario: row.horario,
+                    status: row.status,
+                    valor_total: row.valor_total,
+                    nome_do_cliente: row.nome_do_cliente,
+                    itens: []
+                }
+            }
+            // só adiciona lanches e porções
+            if (row.item_id && ['Lanches', 'Porção'].includes(row.categoria_produto)) {
+                pedidosMap[row.id].itens.push({
+                    id: row.item_id,
+                    quantidade: row.quantidade,
+                    observacao: row.observacao,
+                    nome_produto: row.nome_produto,
+                    adicionais: row.adicionais || null
+                })
+            }
+        })
 
-      // Aqui aplicamos a ordenação via JavaScript
-const pedidosOrdenados = Object.values(pedidosMap).sort((a, b) => {
-    if (a.status === 'pronto' && b.status !== 'pronto') return 1;
-    if (a.status !== 'pronto' && b.status === 'pronto') return -1;
-    return new Date(b.horario) - new Date(a.horario);
-});
+const pedidosOrdenados = Object.values(pedidosMap)
+    .filter(p => p.itens.length > 0)
+    .sort((a, b) => {
+        if (a.status === 'pronto' && b.status !== 'pronto') return 1
+        if (a.status !== 'pronto' && b.status === 'pronto') return -1
+        return new Date(a.horario) - new Date(b.horario) // mais antigos no topo
+    })
 
-      res.json(pedidosOrdenados);
+        res.json(pedidosOrdenados)
     } catch (error) {
-      console.error("Erro ao listar pedidos com itens:", error.message);
-      res.status(500).json({ erro: error.message });
+        console.error('Erro ao listar dashboard:', error.message)
+        res.status(500).json({ erro: error.message })
     }
-  },
+},
 
   buscarPorId: async (req, res) => {
     try {
@@ -101,13 +175,23 @@ criar: async (req, res) => {
         const caixa = await CaixaModel.buscarAberto();
         if (!caixa) return res.status(400).json({ erro: 'Nenhum caixa aberto' });
 
-        const { nome_do_cliente, itens } = req.body;
+        const { nome_do_cliente, itens, forma_pagamento } = req.body;
 
         if (!nome_do_cliente || nome_do_cliente.trim() === '') {
             return res.status(400).json({ erro: 'Nome do cliente é obrigatório' })
         }
 
         for (const item of itens) {
+            const produto = await ProdutoModel.buscarPorId(item.id_produto);
+
+            if (!produto) {
+                return res.status(400).json({ erro: 'Produto não encontrado' })
+            }
+
+            if (!produto.disponivel) {
+                return res.status(400).json({ erro: `O produto "${produto.nome}" está indisponível no momento` })
+            }
+
             const insuficientes = await ReceitaModel.verificarDisponibilidade(item.id_produto, item.quantidade);
             if (insuficientes.length > 0) {
                 return res.status(400).json({
@@ -119,26 +203,12 @@ criar: async (req, res) => {
 
         const idPedido = await PedidoModel.criar({
             id_caixa: caixa.id,
-            nome_do_cliente
+            nome_do_cliente,
+            forma_pagamento: forma_pagamento || null
         });
 
         for (const item of itens) {
             const produto = await ProdutoModel.buscarPorId(item.id_produto);
-
-                if (!produto) {
-        return res.status(400).json({ erro: 'Produto não encontrado' })
-    }
-    if (!produto.disponivel) {
-        return res.status(400).json({ erro: `O produto "${produto.nome}" está indisponível no momento` })
-    }
-
-    const insuficientes = await ReceitaModel.verificarDisponibilidade(item.id_produto, item.quantidade);
-    if (insuficientes.length > 0) {
-        return res.status(400).json({
-            erro: 'Estoque insuficiente',
-            insumos: insuficientes
-        });
-    }
 
             await ItemPedidoModel.criar({
                 id_pedido: idPedido,
