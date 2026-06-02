@@ -67,13 +67,17 @@ const api = axios.create({
 Você precisará de dois terminais abertos simultaneamente:
 
 Terminal 1 — Backend
+
 Bash
 cd backend
 npm run dev
+
 Terminal 2 — Frontend
+
 Bash
 cd frontend
 npm run dev
+
 📱 Acesso pelo Celular
 Para testar o sistema direto do seu dispositivo móvel:
 
@@ -81,5 +85,4 @@ Certifique-se de que o computador e o celular estão conectados na mesma rede Wi
 
 No navegador do celular, acesse:
 
-Plaintext
 http://IP_DA_MAQUINA:5173
