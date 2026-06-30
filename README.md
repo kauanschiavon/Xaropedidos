@@ -25,12 +25,12 @@ npm install
 Crie um arquivo `.env` em `backend`:
 
 ```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=sua_senha_mysql
-DB_NAME=XAROPEDIDOS_DATABASE
-PORT=3000
-JWT_SECRET=xaropedidos_secret_key
+DB_HOST=
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
+PORT=
+JWT_SECRET=
 ```
 
 ### Banco de dados
