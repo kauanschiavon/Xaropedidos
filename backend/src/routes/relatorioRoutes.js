@@ -37,7 +37,7 @@ const [porReceita] = await db.query(`
     JOIN item_do_pedido ip ON ip.id_pedido = p.id
     JOIN receita r ON r.id_produto = ip.id_produto
     JOIN insumo i ON r.id_insumo = i.id
-    WHERE p.status IN ('em_preparo', 'pronto')
+    WHERE p.status = 'em_preparo'
     AND i.nome IN (?)
     GROUP BY i.id, i.nome
 `, [insumosVisiveis])

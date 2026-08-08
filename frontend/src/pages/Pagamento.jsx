@@ -282,18 +282,17 @@ const pedidosPendentes = pedidos.filter(p =>
 </div>
 
                   {/* TEXTO DE STATUS ATUALIZADO AQUI */}
-                  <p
-                    style={{
-                      color: pedido.status === "pronto" ? "#16a34a" : "#e7901e",
-                      fontSize: "12px",
-                      marginTop: "4px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {pedido.status === "pronto"
-                      ? "✓ Pronto para pagar"
-                      : "⏳ Em preparo"}
-                  </p>
+                  <p style={{
+    color: pedido.status === "pronto" ? "#16a34a" : 
+           pedido.status === "pago" ? "#2563eb" : "#e7901e",
+    fontSize: "12px",
+    marginTop: "4px",
+    fontWeight: "bold",
+}}>
+    {pedido.status === "pronto" ? "✓ Pronto para pagar" :
+     pedido.status === "pago" ? "💳 Pago" :
+     "⏳ Em preparo"}
+</p>
 
                   <p
                     style={{
@@ -336,15 +335,13 @@ const pedidosPendentes = pedidos.filter(p =>
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <strong>Mesa {pedido.numero_mesa}</strong>
+                <strong style={{ color: '#000000' }}>{pedido.nome_do_cliente}</strong>
                 <strong style={{ color: "#16a34a" }}>
                   R$ {Number(pedido.valor_total).toFixed(2)}
                 </strong>
               </div>
               {pedido.nome_do_cliente && (
-                <p style={{ color: "#888", fontSize: "13px" }}>
-                  {pedido.nome_do_cliente}
-                </p>
+<p style={{ color: "#888", fontSize: "12px" }}>✓ Fechado</p>
               )}
               <p style={{ color: "#aaa", fontSize: "12px", marginTop: "4px" }}>
                 {new Date(pedido.horario).toLocaleTimeString("pt-BR", {

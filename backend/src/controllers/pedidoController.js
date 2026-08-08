@@ -354,32 +354,39 @@ if (!produto.disponivel) {
       res.status(500).json({ erro: error.message });
     }
   },
-  marcarPronto: async (req, res) => {
+marcarPronto: async (req, res) => {
     try {
-      const rows = await PedidoModel.buscarPorId(req.params.id);
-      if (!rows || rows.length === 0)
-        return res.status(404).json({ erro: "Pedido não encontrado" });
-      if (rows[0].status === "finalizado")
-        return res.status(400).json({ erro: "Pedido já finalizado" });
-      if (rows[0].status === "cancelado")
-        return res.status(400).json({ erro: "Pedido cancelado" });
-      await PedidoModel.atualizarStatus(req.params.id, "pronto");
-      res.json({ mensagem: "Pedido marcado como pronto" });
-    } catch (error) {
-      console.error("Erro ao marcar pedido como pronto:", error.message);
-      res.status(500).json({ erro: error.message });
-    }
-  },
+        const rows = await PedidoModel.buscarPorId(req.params.id)
+        if (!rows || rows.length === 0) return res.status(404).json({ erro: 'Pedido não encontrado' })
+        const pedido = rows[0]
 
-  marcarEmPreparo: async (req, res) => {
-    try {
-      await PedidoModel.atualizarStatus(req.params.id, "em_preparo");
-      res.json({ mensagem: "Pedido voltou para em preparo" });
+        // se já foi pago, marca como finalizado direto
+        const novoStatus = pedido.status === 'pago' ? 'finalizado' : 'pronto'
+        await PedidoModel.atualizarStatus(req.params.id, novoStatus)
+        res.json({ mensagem: 'Status atualizado' })
     } catch (error) {
-      console.error("Erro ao atualizar pedido:", error.message);
-      res.status(500).json({ erro: error.message });
+        console.error('Erro ao marcar pronto:', error.message)
+        res.status(500).json({ erro: error.message })
     }
-  },
+},
+
+marcarEmPreparo: async (req, res) => {
+    try {
+        const rows = await PedidoModel.buscarPorId(req.params.id)
+        if (!rows || rows.length === 0) return res.status(404).json({ erro: 'Pedido não encontrado' })
+        const pedido = rows[0]
+
+        if (pedido.status === 'pago' || pedido.status === 'finalizado') {
+            return res.status(400).json({ erro: 'Pedido já foi pago e não pode voltar para preparo' })
+        }
+
+        await PedidoModel.atualizarStatus(req.params.id, 'em_preparo')
+        res.json({ mensagem: 'Status atualizado' })
+    } catch (error) {
+        console.error('Erro ao marcar em preparo:', error.message)
+        res.status(500).json({ erro: error.message })
+    }
+},
 };
 
 module.exports = PedidoController;

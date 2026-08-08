@@ -58,14 +58,14 @@ registrar: async (req, res) => {
         const novoTotalPago = totalPago + valorRegistrado;
         const novoSaldo = pedido.valor_total - novoTotalPago;
 
-        if (novoSaldo <= 0) {
-            const novoStatus = pedido.status === 'pronto' ? 'pago' : 'pago'
-            await PedidoModel.atualizarStatus(id_pedido, novoStatus)
-            return res.json({
-                mensagem: 'Pagamento registrado com sucesso',
-                saldo_restante: 0
-            })
-        }
+if (novoSaldo <= 0) {
+    const novoStatus = pedido.status === 'pronto' ? 'finalizado' : 'pago'
+    await PedidoModel.atualizarStatus(id_pedido, novoStatus)
+    return res.json({
+        mensagem: 'Pagamento registrado com sucesso',
+        saldo_restante: 0
+    })
+}
 
         res.json({
             mensagem: 'Pagamento parcial registrado',
