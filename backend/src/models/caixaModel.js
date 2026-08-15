@@ -29,12 +29,12 @@ const CaixaModel = {
     );
   },
 
-  adicionarSaldo: async (id, valor) => {
-    await db.query("UPDATE caixa SET valor = valor + ? WHERE id = ?", [
-      valor,
-      id,
-    ]);
-  },
+adicionarSaldo: async (id, valor) => {
+    await db.query('UPDATE caixa SET valor_recebido = valor_recebido + ? WHERE id = ?', [
+        valor,
+        id,
+    ])
+},
 
   calcularTotalPorForma: async (idCaixa) => {
     const [rows] = await db.query(

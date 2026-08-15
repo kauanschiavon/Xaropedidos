@@ -10,6 +10,8 @@ function Pedidos() {
   const [adicionaisSelecionados, setAdicionaisSelecionados] = useState({});
   const [adicionaisEdicao, setAdicionaisEdicao] = useState([]);
   const [produtoRapido, setProdutoRapido] = useState(null);
+  const [formaPagamentoEdicao, setFormaPagamentoEdicao] = useState('')
+  const [obsTrocoEdicao, setObsTrocoEdicao] = useState('')
   
 
   // Estados para Lanche Personalizado
@@ -143,6 +145,8 @@ const alterarQuantidadeItem = async (item, delta) => {
   // --- FUNÇÕES DE EDIÇÃO ---
   const abrirEdicao = async (pedido) => {
     setPedidoEditando(pedido);
+    setFormaPagamentoEdicao(pedido.forma_pagamento || '')
+    setObsTrocoEdicao(pedido.obs_troco || '')
     setAdicionaisEdicao([]);
     const [itensRes, adicionaisRes] = await Promise.all([
       api.get(`/pedidos/${pedido.id}`),
@@ -1459,14 +1463,9 @@ setNovoPedido(prev => ({
   })}
 
 {pedido.forma_pagamento && (
-    <span style={{
-        color: '#888',
-        fontSize: '11px',
-        background: '#f0f0f0',
-        padding: '2px 8px',
-        borderRadius: '10px'
-    }}>
+    <span style={{ color: '#888', fontSize: '11px', background: '#f0f0f0', padding: '2px 8px', borderRadius: '10px' }}>
         {pedido.forma_pagamento.toUpperCase()}
+        {pedido.obs_troco && ` — ${pedido.obs_troco}`}
     </span>
 )}
 </span>
@@ -1608,6 +1607,38 @@ setNovoPedido(prev => ({
             <h3 style={{ margin: 0, color: '#e7901e' }}>
                 {pedidoEditando.nome_do_cliente}
             </h3>
+<div style={{ marginBottom: '16px' }}>
+    <label style={{ fontSize: '13px', color: '#555' }}>Forma de Pagamento</label>
+    <select style={estilo.select}
+        value={formaPagamentoEdicao}
+        onChange={async (e) => {
+            setFormaPagamentoEdicao(e.target.value)
+            await api.put(`/pedidos/${pedidoEditando.id}/forma-pagamento`, {
+                forma_pagamento: e.target.value
+            })
+            carregarPedidos()
+        }}>
+        <option value="">Não informado</option>
+        <option value="pix">PIX</option>
+        <option value="dinheiro">Dinheiro</option>
+        <option value="cartao">Cartão</option>
+    </select>
+
+    {formaPagamentoEdicao === 'dinheiro' && (
+        <input
+            style={estilo.input}
+            placeholder="Ex: Troco para R$ 50,00"
+            value={obsTrocoEdicao}
+            onChange={async (e) => {
+                setObsTrocoEdicao(e.target.value)
+                await api.put(`/pedidos/${pedidoEditando.id}/forma-pagamento`, {
+                    forma_pagamento: 'dinheiro',
+                    obs_troco: e.target.value
+                })
+            }}
+        />
+    )}
+</div>
             <button onClick={() => setPedidoEditando(null)} style={{
                 background: 'none', border: 'none',
                 fontSize: '20px', cursor: 'pointer', color: '#888'

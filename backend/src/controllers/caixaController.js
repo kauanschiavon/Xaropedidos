@@ -24,19 +24,23 @@ const CaixaController = {
             res.status(500).json({ erro: error.message });
         }
     },
-
-    fechar: async (req, res) => {
-        try {
-            const caixa = await CaixaModel.buscarAberto();
-            if (!caixa) return res.status(404).json({ erro: 'Nenhum caixa aberto para fechar' });
-            const totais = await CaixaModel.calcularTotalPorForma(caixa.id);
-            await CaixaModel.fechar(caixa.id);
-            res.json({ mensagem: 'Caixa fechado com sucesso', totais });
-        } catch (error) {
-            console.error('Erro ao fechar caixa:', error.message);
-            res.status(500).json({ erro: error.message });
-        }
-    },
+fechar: async (req, res) => {
+    try {
+        const caixa = await CaixaModel.buscarAberto();
+        if (!caixa) return res.status(404).json({ erro: 'Nenhum caixa aberto para fechar' });
+        const totais = await CaixaModel.calcularTotalPorForma(caixa.id);
+        await CaixaModel.fechar(caixa.id);
+        res.json({ 
+            mensagem: 'Caixa fechado com sucesso', 
+            totais,
+            valor_inicial: caixa.valor,
+            valor_recebido: caixa.valor_recebido
+        });
+    } catch (error) {
+        console.error('Erro ao fechar caixa:', error.message);
+        res.status(500).json({ erro: error.message });
+    }
+},
 
     calcularTotais: async (req, res) => {
         try {

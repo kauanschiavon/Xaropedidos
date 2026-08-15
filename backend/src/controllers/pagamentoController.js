@@ -23,10 +23,19 @@ registrar: async (req, res) => {
         if (!rows || rows.length === 0) return res.status(404).json({ erro: 'Pedido não encontrado' });
         const pedido = rows[0];
 
-if (pedido.status === 'finalizado' || pedido.status === 'cancelado') {
-    return res.status(400).json({ erro: 'Pedido já finalizado' });
-};        if (pedido.status === 'cancelado') return res.status(400).json({ erro: 'Pedido cancelado' });
+if (pedido.status === 'cancelado') {
+    return res.status(400).json({ erro: 'Pedido cancelado' })
+}
 
+if (pedido.status === 'finalizado') {
+    const [pendentes] = await db.query(
+        'SELECT id FROM pendente WHERE id_pedido = ? AND status = "pendente"',
+        [id_pedido]
+    )
+    if (pendentes.length === 0) {
+        return res.status(400).json({ erro: 'Pedido já finalizado' })
+    }
+}
         const caixa = await CaixaModel.buscarAberto();
         if (!caixa) return res.status(400).json({ erro: 'Nenhum caixa aberto' });
 

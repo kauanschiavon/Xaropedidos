@@ -169,6 +169,18 @@ const pedidosOrdenados = Object.values(pedidosMap)
       res.status(500).json({ erro: error.message });
     }
   },
+  atualizarFormaPagamento: async (req, res) => {
+    try {
+        const { forma_pagamento, obs_troco } = req.body
+        await db.query(
+            'UPDATE pedido SET forma_pagamento = ?, obs_troco = ? WHERE id = ?',
+            [forma_pagamento || null, obs_troco || null, req.params.id]
+        )
+        res.json({ mensagem: 'Forma de pagamento atualizada' })
+    } catch (error) {
+        res.status(500).json({ erro: error.message })
+    }
+},
 
 criar: async (req, res) => {
     try {

@@ -6,6 +6,22 @@ function Caixa() {
   const [valorAbertura, setValorAbertura] = useState("");
   const [totais, setTotais] = useState([]);
   const [mensagem, setMensagem] = useState(null);
+  const [relatorioFechamento, setRelatorioFechamento] = useState(null)
+
+const fecharCaixa = async () => {
+    if (!window.confirm('Deseja fechar o caixa?')) return
+    try {
+        const res = await api.put('/caixa/fechar')
+        setMensagem({ tipo: 'sucesso', texto: 'Caixa fechado com sucesso!' })
+        setRelatorioFechamento(res.data)
+        setCaixa(null)
+        setTotais(res.data.totais)
+    } catch (error) {
+        setMensagem({ tipo: 'erro', texto: error.response?.data?.erro || 'Erro ao fechar caixa' })
+    }
+    setTimeout(() => setMensagem(null), 3000)
+}
+
 
   const carregarCaixa = async () => {
     try {
@@ -39,22 +55,6 @@ function Caixa() {
       setMensagem({
         tipo: "erro",
         texto: error.response?.data?.erro || "Erro ao abrir caixa",
-      });
-    }
-    setTimeout(() => setMensagem(null), 3000);
-  };
-
-  const fecharCaixa = async () => {
-    if (!window.confirm("Deseja fechar o caixa?")) return;
-    try {
-      const res = await api.put("/caixa/fechar");
-      setMensagem({ tipo: "sucesso", texto: "Caixa fechado com sucesso!" });
-      setCaixa(null);
-      setTotais(res.data.totais);
-    } catch (error) {
-      setMensagem({
-        tipo: "erro",
-        texto: error.response?.data?.erro || "Erro ao fechar caixa",
       });
     }
     setTimeout(() => setMensagem(null), 3000);
@@ -136,6 +136,59 @@ const formaLabel = {
         </div>
       )}
 
+{relatorioFechamento && (
+    <div style={{
+        background: 'white', borderRadius: '12px',
+        padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        marginBottom: '20px'
+    }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0 }}>📊 Relatório de Fechamento</h3>
+            <button onClick={() => setRelatorioFechamento(null)} style={{
+                background: 'none', border: 'none',
+                fontSize: '20px', cursor: 'pointer', color: '#888'
+            }}>✕</button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ background: '#f9f9f9', borderRadius: '8px', padding: '16px' }}>
+                <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>Valor Inicial</p>
+                <h3 style={{ margin: '4px 0 0', color: '#1a1a1a' }}>
+                    R$ {Number(relatorioFechamento.valor_inicial || 0).toFixed(2)}
+                </h3>
+            </div>
+            <div style={{ background: '#f0fdf4', borderRadius: '8px', padding: '16px' }}>
+                <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>Total Recebido</p>
+                <h3 style={{ margin: '4px 0 0', color: '#16a34a' }}>
+                    R$ {Number(relatorioFechamento.valor_recebido || 0).toFixed(2)}
+                </h3>
+            </div>
+        </div>
+
+        <h4 style={{ marginBottom: '12px', color: '#555' }}>Por forma de pagamento</h4>
+        {relatorioFechamento.totais && relatorioFechamento.totais.map((t, i) => (
+            <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between',
+                padding: '10px 0', borderBottom: '1px solid #f0f0f0'
+            }}>
+                <span style={{ color: '#555' }}>{t.forma?.toUpperCase()}</span>
+                <strong>R$ {Number(t.total).toFixed(2)}</strong>
+            </div>
+        ))}
+
+        <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            padding: '14px 0', marginTop: '8px',
+            borderTop: '2px solid #1a1a1a'
+        }}>
+            <strong style={{ fontSize: '16px' }}>Total Geral</strong>
+            <strong style={{ fontSize: '16px', color: '#e7901e' }}>
+                R$ {(Number(relatorioFechamento.valor_inicial || 0) + Number(relatorioFechamento.valor_recebido || 0)).toFixed(2)}
+            </strong>
+        </div>
+    </div>
+)}      
+
       {/* Status do caixa */}
       <div style={estilo.card}>
         <div
@@ -167,7 +220,9 @@ const formaLabel = {
                   {new Date(caixa.horario_abertura).toLocaleString("pt-BR")}
                 </p>
                 <p style={{ color: "#888", fontSize: "13px" }}>
-                  Valor inicial: R$ {Number(caixa.valor).toFixed(2)}
+                  <p>Valor inicial: R$ {Number(caixa.valor).toFixed(2)}</p>
+<p>Valor recebido: R$ {Number(caixa.valor_recebido).toFixed(2)}</p>
+<p>Total: R$ {(Number(caixa.valor) + Number(caixa.valor_recebido)).toFixed(2)}</p>
                 </p>
               </>
             ) : (

@@ -9,10 +9,9 @@ router.get('/', async (req, res) => {
             FROM pendente p
             JOIN pedido pe ON p.id_pedido = pe.id
             WHERE p.status = 'pendente'
-            ORDER BY p.data_registro DESC
+            ORDER BY pe.nome_do_cliente ASC
         `)
 
-        // busca itens de cada pedido
         for (const pendente of pendentes) {
             const [itens] = await db.query(`
                 SELECT 
@@ -30,6 +29,20 @@ router.get('/', async (req, res) => {
         }
 
         res.json(pendentes)
+    } catch (error) {
+        res.status(500).json({ erro: error.message })
+    }
+})
+
+router.get('/historico', async (req, res) => {
+    try {
+        const [historico] = await db.query(`
+            SELECT p.*, pe.nome_do_cliente, pe.valor_total, pe.horario as horario_pedido
+            FROM pendente p
+            JOIN pedido pe ON p.id_pedido = pe.id
+            ORDER BY pe.nome_do_cliente ASC, p.data_registro DESC
+        `)
+        res.json(historico)
     } catch (error) {
         res.status(500).json({ erro: error.message })
     }

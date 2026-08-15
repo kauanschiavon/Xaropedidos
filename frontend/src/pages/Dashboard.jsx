@@ -383,16 +383,6 @@ function Dashboard() {
                       </>
                     )}
 
-                    <span
-                      style={{
-                        fontWeight: "bold",
-                        fontSize: "14px",
-                        color: "#1a1a1a",
-                        marginLeft: "4px",
-                      }}
-                    >
-                      R$ {Number(pedido.valor_total || 0).toFixed(2)}
-                    </span>
                   </div>{" "}
                   {/* FECHAR O CABEÇALHO AQUI */}
                 </div>

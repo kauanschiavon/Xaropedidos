@@ -13,7 +13,8 @@ const insumosVisiveis = [
     'Bacon (metade)',
     'Calabresa (metade)',
     'Salsicha',
-    'Frango (metade)'
+    'Frango (metade)',
+    'Calabresa (Porção)'
 ]
 
 

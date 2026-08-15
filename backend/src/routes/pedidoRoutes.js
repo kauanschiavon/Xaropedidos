@@ -13,5 +13,6 @@ router.put('/:id/pronto', PedidoController.marcarPronto);
 router.put('/:id/em-preparo', PedidoController.marcarEmPreparo);
 router.post('/:id/itens', PedidoController.adicionarItem);
 router.delete('/:id/itens/:idItem', PedidoController.removerItem);
+router.put('/:id/forma-pagamento', PedidoController.atualizarFormaPagamento);
 
 module.exports = router;
