@@ -180,6 +180,11 @@ criar: async (req, res) => {
         if (!nome_do_cliente || nome_do_cliente.trim() === '') {
             return res.status(400).json({ erro: 'Nome do cliente é obrigatório' })
         }
+        if (!itens || itens.length === 0) {
+    res.status(201).json({ mensagem: 'Pedido registrado com sucesso', id: idPedido });
+    return;
+}
+
 
         for (const item of itens) {
             const produto = await ProdutoModel.buscarPorId(item.id_produto);

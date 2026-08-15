@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
+      "dev": "nodemon --legacy-watch src/app.js",
     "build": "./node_modules/.bin/vite build",
     "preview": "./node_modules/.bin/vite preview"
   },

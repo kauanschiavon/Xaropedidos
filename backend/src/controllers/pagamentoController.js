@@ -23,21 +23,22 @@ registrar: async (req, res) => {
         if (!rows || rows.length === 0) return res.status(404).json({ erro: 'Pedido não encontrado' });
         const pedido = rows[0];
 
-        if (pedido.status === 'finalizado') return res.status(400).json({ erro: 'Pedido já finalizado' });
-        if (pedido.status === 'cancelado') return res.status(400).json({ erro: 'Pedido cancelado' });
+if (pedido.status === 'finalizado' || pedido.status === 'cancelado') {
+    return res.status(400).json({ erro: 'Pedido já finalizado' });
+};        if (pedido.status === 'cancelado') return res.status(400).json({ erro: 'Pedido cancelado' });
 
         const caixa = await CaixaModel.buscarAberto();
         if (!caixa) return res.status(400).json({ erro: 'Nenhum caixa aberto' });
 
         // trata pendente separadamente
-        if (forma === 'pendente') {
-            await db.query(
-                'INSERT INTO pendente (id_pedido, nome_do_cliente, valor_total, data_registro, status) VALUES (?, ?, ?, NOW(), "pendente")',
-                [id_pedido, pedido.nome_do_cliente, pedido.valor_total]
-            )
-            await PedidoModel.atualizarStatus(id_pedido, 'finalizado')
-            return res.json({ mensagem: 'Pedido registrado como pendente', saldo_restante: 0 })
-        }
+if (forma === 'pendente') {
+    await db.query(
+        'INSERT INTO pendente (id_pedido, nome_do_cliente, valor_total, data_registro, status) VALUES (?, ?, ?, NOW(), "pendente")',
+        [id_pedido, pedido.nome_do_cliente, pedido.valor_total]
+    )
+    await PedidoModel.atualizarStatus(id_pedido, 'pendente')
+    return res.json({ mensagem: 'Pedido registrado como pendente', saldo_restante: 0 })
+}
 
         const totalPago = await PagamentoModel.somarPagosPorPedido(id_pedido);
         const saldoRestante = pedido.valor_total - totalPago;

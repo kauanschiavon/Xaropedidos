@@ -2,15 +2,15 @@ import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 
 const menu = [
-    { label: 'Dashboard', path: '/', icon: '📊' },
-    { label: 'Pedidos', path: '/pedidos', icon: '🧾' },
-    { label: 'Caixa', path: '/caixa', icon: '💰' },
-    { label: 'Pagamentos', path: '/pagamentos', icon: '💳' },
-    { label: 'Cardápio', path: '/produtos', icon: '🍔' },
-    { label: 'Estoque', path: '/estoque', icon: '📦' },
-    { label: 'Fornecedores', path: '/fornecedores', icon: '🚚' },
-    { label: 'Relatórios', path: '/relatorios', icon: '📈' },
-    { label: 'Pendentes', path: '/pendentes', icon: '⚠️' },
+    { label: 'Dashboard', path: '/', icon: '' },
+    { label: 'Pedidos', path: '/pedidos', icon: '' },
+    { label: 'Caixa', path: '/caixa', icon: '' },
+    { label: 'Pagamentos', path: '/pagamentos', icon: '' },
+    { label: 'Cardápio', path: '/produtos', icon: '' },
+    { label: 'Estoque', path: '/estoque', icon: '' },
+    { label: 'Fornecedores', path: '/fornecedores', icon: '' },
+    { label: 'Relatórios', path: '/relatorios', icon: '' },
+    { label: 'Pendentes', path: '/pendentes', icon: '' },
 ]
 
 function Sidebar() {

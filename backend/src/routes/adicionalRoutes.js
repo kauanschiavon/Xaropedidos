@@ -74,32 +74,34 @@ router.post('/lanche-personalizado', async (req, res) => {
         const caixa = await require('../models/caixaModel').buscarAberto()
         if (!caixa) return res.status(400).json({ erro: 'Nenhum caixa aberto' })
 
-        // cria o produto temporário
-        const [result] = await db.query(
-            'INSERT INTO produto (nome, valor_unitario, categoria, disponivel) VALUES (?, ?, ?, ?)',
-            [nome || 'Lanche Personalizado', preco || 0, 'Lanches', false]
-        )
-        const idProduto = result.insertId
+        // usa o produto fixo em vez de criar um novo
+        const ID_LANCHE_PERSONALIZADO = 57 // troque pelo id gerado acima
 
-        // cria os itens do pedido
+        // cria o item do pedido
         const [itemResult] = await db.query(
             'INSERT INTO item_do_pedido (id_pedido, id_produto, quantidade, valor_unitario, observacao) VALUES (?, ?, ?, ?, ?)',
-            [id_pedido, idProduto, 1, preco || 0, 'Lanche personalizado']
+            [id_pedido, ID_LANCHE_PERSONALIZADO, 1, preco || 0, nome || 'Lanche Personalizado']
         )
         const idItem = itemResult.insertId
 
         // atualiza valor total do pedido
         await db.query('UPDATE pedido SET valor_total = valor_total + ? WHERE id = ?', [preco || 0, id_pedido])
 
-        // debita os insumos
-        for (const ingrediente of ingredientes) {
-            await db.query(
-                'UPDATE insumo SET quantidade = quantidade - ? WHERE id = ?',
-                [ingrediente.quantidade, ingrediente.id_insumo]
-            )
-        }
+        // debita os insumos e salva como adicionais avulsos
+// salva os ingredientes avulsos
+for (const ingrediente of ingredientes) {
+    await db.query(
+        'INSERT INTO item_ingrediente (id_item_pedido, id_insumo, quantidade) VALUES (?, ?, ?)',
+        [idItem, ingrediente.id_insumo, ingrediente.quantidade]
+    )
+    // debita estoque
+    await db.query(
+        'UPDATE insumo SET quantidade = quantidade - ? WHERE id = ?',
+        [ingrediente.quantidade, ingrediente.id_insumo]
+    )
+}
 
-        res.status(201).json({ mensagem: 'Lanche personalizado adicionado!', id_item: idItem })
+        res.status(201).json({ mensagem: 'Lanche personalizado adicionado!', id_item: idItem, ingredientes })
     } catch (error) {
         console.error('Erro ao criar lanche personalizado:', error.message)
         res.status(500).json({ erro: error.message })

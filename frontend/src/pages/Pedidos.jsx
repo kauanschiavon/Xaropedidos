@@ -10,6 +10,7 @@ function Pedidos() {
   const [adicionaisSelecionados, setAdicionaisSelecionados] = useState({});
   const [adicionaisEdicao, setAdicionaisEdicao] = useState([]);
   const [produtoRapido, setProdutoRapido] = useState(null);
+  
 
   // Estados para Lanche Personalizado
   const [mostrarPersonalizado, setMostrarPersonalizado] = useState(false);
@@ -75,6 +76,8 @@ const carregarPedidos = () => {
       setProdutos(produtosRes.data);
       setAdicionais(adicionaisRes.data);
       setInsumos(insumosRes.data);
+      
+
     };
     init();
 
@@ -232,10 +235,19 @@ const alterarQuantidadeItem = async (item, delta) => {
       const itensPersonalizados = novoPedido.itens.filter(
         (i) => i.id_produto === "personalizado",
       );
+
+      console.log('itens padrao:', itensPadrao)
+console.log('itens personalizados:', itensPersonalizados)
+
+
 const res = await api.post('/pedidos', {
     nome_do_cliente: novoPedido.nome_do_cliente,
     forma_pagamento: novoPedido.forma_pagamento || null,
-    itens: itensPadrao
+    itens: itensPadrao.length > 0 ? itensPadrao : [{
+        id_produto: 1, // produto placeholder
+        quantidade: 0,
+        observacao: null
+    }]
 })
 
       const idPedido = res.data.id;
@@ -1188,19 +1200,6 @@ const res = await api.post('/pedidos', {
                 placeholder="Ex: X-Especial"
               />
             </div>
-            <div>
-              <label style={{ fontSize: "13px", color: "#555" }}>
-                Preço (R$)
-              </label>
-              <input
-                style={estilo.input}
-                type="number"
-                step="0.01"
-                value={precoPersonalizado}
-                onChange={(e) => setPrecoPersonalizado(e.target.value)}
-                placeholder="Ex: 25.00"
-              />
-            </div>
           </div>
 
           {/* Ingredientes */}
@@ -1215,19 +1214,26 @@ const res = await api.post('/pedidos', {
               marginBottom: "16px",
             }}
           >
-            {insumos
-              .filter(
-                (i) =>
-                  ![
-                    "Batata Palha",
-                    "Presunto",
-                    "Mussarela",
-                    "Salada",
-                    "Bacon (metade)",
-                    "Calabresa (metade)",
-                    "Frango (metade)",
-                  ].includes(i.nome),
-              )
+{insumos
+    .filter(i => [
+        'Pão de Hambúrguer',
+        'Hambúrguer',
+        'Milho',
+        'Alface',
+        'Tomate',
+        'Bacon',
+        'Calabresa',
+        'Pão de cachorro',
+        'Frango',
+        'Ovo',
+        'Salsicha',
+        'Catupiry',
+        'Cheddar',
+        'Cebola',
+        'Presunto',
+        'Mussarela',
+        'Batata Palha',
+    ].includes(i.nome))
               .map((insumo) => {
                 const qtd = ingredientesPersonalizado[insumo.id] || 0;
                 return (
@@ -1358,48 +1364,46 @@ const res = await api.post('/pedidos', {
           {/* Se estiver criando um novo pedido */}
           {novoPedido.nome_do_cliente && (
             <button
-              style={{ ...estilo.botao, width: "100%", padding: "14px" }}
-              onClick={() => {
-                const ingredientesSelecionados = Object.entries(
-                  ingredientesPersonalizado,
-                )
-                  .filter(([, qtd]) => qtd > 0)
-                  .map(([id_insumo, quantidade]) => ({
-                    id_insumo: parseInt(id_insumo),
-                    quantidade,
-                  }));
+    style={{ ...estilo.botao, width: '100%', padding: '14px' }}
+    onClick={() => {
+        const ingredientesSelecionados = Object.entries(ingredientesPersonalizado)
+            .filter(([, qtd]) => qtd > 0)
+            .map(([id_insumo, quantidade]) => ({
+                id_insumo: parseInt(id_insumo),
+                quantidade,
+            }))
 
-                if (ingredientesSelecionados.length === 0) {
-                  setMensagem({
-                    tipo: "erro",
-                    texto: "Selecione pelo menos um ingrediente",
-                  });
-                  return;
-                }
+        if (ingredientesSelecionados.length === 0) {
+            setMensagem({ tipo: 'erro', texto: 'Selecione pelo menos um ingrediente' })
+            return
+        }
 
-                setNovoPedido((prev) => ({
-                  ...prev,
-                  itens: [
-                    ...prev.itens,
-                    {
-                      id_produto: "personalizado",
-                      quantidade: 1,
-                      observacao: "Lanche personalizado",
-                      nome_produto: nomePersonalizado || "Lanche Personalizado",
-                      preco_personalizado: parseFloat(precoPersonalizado) || 0,
-                      ingredientes_personalizado: ingredientesSelecionados,
-                      adicionais: [],
-                    },
-                  ],
-                }));
-                setMostrarPersonalizado(false);
-                setIngredientesPersonalizado({});
-                setNomePersonalizado("");
-                setPrecoPersonalizado("");
-              }}
-            >
-              + Adicionar ao Novo Pedido
-            </button>
+        if (!novoPedido.nome_do_cliente) {
+            setMensagem({ tipo: 'erro', texto: 'Preencha o nome do cliente primeiro' })
+            return
+        }
+const precoCalculado = 0
+
+
+setNovoPedido(prev => ({
+    ...prev,
+    itens: [...prev.itens, {
+        id_produto: 'personalizado',
+        quantidade: 1,
+        observacao: 'Lanche personalizado',
+        nome_produto: nomePersonalizado || 'Lanche Personalizado',
+        preco_personalizado: precoCalculado,
+        ingredientes_personalizado: ingredientesSelecionados,
+        adicionais: []
+    }]
+}))
+        setMostrarPersonalizado(false)
+        setIngredientesPersonalizado({})
+        setNomePersonalizado('')
+        setPrecoPersonalizado('')
+    }}>
+    + Adicionar ao Pedido
+</button>
           )}
         </div>
       )}

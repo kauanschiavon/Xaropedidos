@@ -113,7 +113,7 @@ function Dashboard() {
         (estimativa.total_lanches > 0 || estimativa.total_porcoes > 0) && (
           <div
             style={{
-              background: "linear-gradient(135deg, #e7901e, #dc2b1c)",
+              background: "#000000",
               borderRadius: "12px",
               padding: "20px 24px",
               marginBottom: "24px",
@@ -242,13 +242,11 @@ function Dashboard() {
             Nenhum pedido ativo no momento
           </div>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "12px",
-            }}
-          >
+<div style={{
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: '12px'
+}}>
             {pedidos.map((pedido, index) => (
               <div
                 key={pedido.id}
@@ -370,8 +368,7 @@ function Dashboard() {
                         <button
                           onClick={() => marcarPronto(pedido.id)}
                           style={{
-                            background:
-                              "linear-gradient(135deg, #e7901e, #dc2b1c)",
+                            background:"#000000",
                             color: "white",
                             border: "none",
                             borderRadius: "8px",
@@ -408,59 +405,34 @@ function Dashboard() {
                     gap: "5px",
                   }}
                 >
-                  {pedido.itens.map((item, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "6px 10px",
-                        background: "#f9f9f9",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          background: "#e7901e",
-                          color: "white",
-                          borderRadius: "6px",
-                          padding: "2px 7px",
-                          fontSize: "12px",
-                          fontWeight: "bold",
-                          minWidth: "26px",
-                          textAlign: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {item.quantidade}x
-                      </span>
-                      <span style={{ fontWeight: "bold", fontSize: "13px" }}>
-                        {item.nome_produto}
-                      </span>
-                      {item.adicionais && (
-                        <span
-                          style={{
-                            color: "#e7901e",
-                            fontSize: "11px",
-                            fontStyle: "italic",
-                          }}
-                        >
-                          + {item.adicionais}
-                        </span>
-                      )}
-{item.observacao && (
-    <span style={{
-        color: '#dc2b1c',
-        fontSize: '14px',
-        fontWeight: 'bold',
-        textTransform: 'uppercase'
+{pedido.itens.map((item, i) => (
+    <div key={i} style={{
+        display: 'flex', alignItems: 'center', gap: '12px',
+        padding: '10px 14px', background: '#f9f9f9', borderRadius: '8px'
     }}>
-        ⚠ {item.observacao}
-    </span>
-)}
-                    </div>
-                  ))}
+        <span style={{
+            background: '#000000', color: 'white',
+            borderRadius: '6px', padding: '4px 10px',
+            fontSize: '18px', fontWeight: 'bold',
+            minWidth: '40px', textAlign: 'center', flexShrink: 0
+        }}>
+            {item.quantidade}x
+        </span>
+        <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
+            {item.nome_produto}
+        </span>
+        {item.adicionais && (
+            <span style={{ color: '#e7901e', fontSize: '16px', fontStyle: 'italic' }}>
+                + {item.adicionais}
+            </span>
+        )}
+        {item.observacao && (
+            <span style={{ color: '#dc2b1c', fontSize: '16px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                ⚠ {item.observacao}
+            </span>
+        )}
+    </div>
+))}
                 </div>
               </div>
             ))}

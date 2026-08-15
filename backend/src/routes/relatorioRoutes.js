@@ -16,6 +16,7 @@ const insumosVisiveis = [
     'Frango (metade)'
 ]
 
+
 const adicionaisVisiveis = [
     'Bacon (adicional)',
     'Calabresa (adicional)',
@@ -50,10 +51,26 @@ const [porAdicionais] = await db.query(`
     JOIN item_do_pedido ip ON ip.id_pedido = p.id
     JOIN item_adicional ia ON ia.id_item_pedido = ip.id
     JOIN adicional a ON ia.id_adicional = a.id
-    WHERE p.status IN ('em_preparo', 'pronto')
-    AND a.nome IN (?)
+WHERE p.status = 'em_preparo'    AND a.nome IN (?)
     GROUP BY a.id, a.nome
 `, [adicionaisVisiveis])
+const [porIngredientesAvulsos] = await db.query(`
+    SELECT 
+        i.nome as nome_insumo,
+        SUM(ii.quantidade) as total_necessario
+    FROM pedido p
+    JOIN item_do_pedido ip ON ip.id_pedido = p.id
+    JOIN item_ingrediente ii ON ii.id_item_pedido = ip.id
+    JOIN insumo i ON ii.id_insumo = i.id
+    WHERE p.status = 'em_preparo'
+    AND i.nome IN (?)
+    GROUP BY i.id, i.nome
+`, [insumosVisiveis])
+
+porIngredientesAvulsos.forEach(item => {
+    const nome = normalizarNome(item.nome_insumo)
+    mapa[nome] = (mapa[nome] || 0) + Number(item.total_necessario)
+})
         const mapa = {}
 
         // função para normalizar o nome — junta adicional e metade
